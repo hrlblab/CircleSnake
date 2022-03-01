@@ -1,2 +1,2 @@
 # CircleSnake
-CircleSnake paper
+CircleSnake: Instance Segmentation with Circle Representation
