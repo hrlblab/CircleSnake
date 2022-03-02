@@ -1,0 +1,21 @@
+model: 'long_rcnn_det'
+network: 'rcnn_34' # Syntax: arch_numOfLayers
+task: 'circlenet' # Determines which network to call [circle_snake, ct_rcnn, rcnn_snake, snake, circlenet]
+resume: true
+gpus: (1,) # Must be a tuple
+
+train:
+    optim: 'adam'
+    lr: 1e-4
+    milestones: (80, 120, 150, 170)
+    gamma: 0.5
+    batch_size: 1
+    dataset: 'CocoTrain'
+    num_workers: 0 # FIXME - Revert to number of cores for training
+    epoch: 50
+test:
+    dataset: 'CocoVal'
+    batch_size: 1
+
+heads: {'act_hm': 8, 'awh': 2}
+segm_or_bbox: 'segm'

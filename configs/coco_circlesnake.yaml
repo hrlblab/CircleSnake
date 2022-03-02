@@ -1,0 +1,25 @@
+model: 'coco'
+network: 'ro_34' # Syntax: arch_numOfLayers
+task: 'circle_snake' # Determines which network to call
+resume: false
+gpus: (0,) # Must be a tuple
+
+train:
+    optim: 'adam'
+    lr: 4e-4
+    milestones: (80, 120, 150, 170)
+    gamma: 0.5
+    batch_size: 16
+    dataset: 'CocoTrain'
+    num_workers: 16
+    epoch: 150
+    weight_decay: 0.0
+test:
+    dataset: 'CocoVal'
+    batch_size: 1
+
+heads: {'ct_hm': 1, 'radius': 1, 'reg': 2}
+segm_or_bbox: 'segm'
+ct_score: 0.05
+save_ep: 1
+eval_ep: 1
