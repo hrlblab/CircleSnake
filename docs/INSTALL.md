@@ -6,7 +6,7 @@ We used an Ubuntu 18.04 OS and CUDA 11.4 system. Installation may vary based on 
 0. Install [mamba](https://mamba.readthedocs.io/en/latest/installation.html) (faster) or [conda](https://docs.conda.io/en/latest/miniconda.html)
 ```
 conda env create -f environment.yml
-conda activate snake
+conda activate CircleSnake
 ```
 
 ## Install Apex
