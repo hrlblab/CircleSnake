@@ -8,24 +8,24 @@ scale_range = np.arange(0.4, 1.0, 0.1)
 def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = crop_scale
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.choice(scale_range)
         seed = np.random.randint(0, len(polys))
         index = np.random.randint(0, len(polys[seed][0]))
         x, y = polys[seed][0][index]
         center[0] = x
         border = scale[0] // 2 if scale[0] < width else width - scale[0] // 2
-        center[0] = np.clip(center[0], a_min=border, a_max=width-border)
+        center[0] = np.clip(center[0], a_min=border, a_max=width - border)
         center[1] = y
         border = scale[1] // 2 if scale[1] < height else height - scale[1] // 2
-        center[1] = np.clip(center[1], a_min=border, a_max=height-border)
+        center[1] = np.clip(center[1], a_min=border, a_max=height - border)
 
         # flip augmentation
         if np.random.random() < 0.5:
@@ -34,7 +34,7 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
             center[0] = width - center[0] - 1
 
     input_w, input_h = input_scale
-    if split != 'train':
+    if split != "train":
         center = np.array([width // 2, height // 2])
         scale = np.array([width, height])
         # input_w, input_h = int((width / 1 + 31) // 32 * 32), int((height / 1 + 31) // 32 * 32)
@@ -45,8 +45,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         data_utils.color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # data_utils.blur_aug(inp)
 
@@ -59,4 +59,3 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     inp_out_hw = (input_h, input_w, output_h, output_w)
 
     return orig_img, inp, trans_input, trans_output, flipped, center, scale, inp_out_hw
-

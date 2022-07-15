@@ -1,9 +1,11 @@
-import numpy as np
-import cv2
 import random
-from torch import nn
+
+import cv2
+import numpy as np
 import torch
 from imgaug import augmenters as iaa
+from torch import nn
+
 from lib.config import cfg
 
 
@@ -36,15 +38,15 @@ def gaussian_radius(det_size, min_overlap=0.7):
     height, width = det_size
 
     a1 = 1
-    b1 = (height + width)
+    b1 = height + width
     c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
-    sq1 = np.sqrt(b1 ** 2 - 4 * a1 * c1)
+    sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
     r1 = (b1 - sq1) / (2 * a1)
 
     a2 = 4
     b2 = 2 * (height + width)
     c2 = (1 - min_overlap) * width * height
-    sq2 = np.sqrt(b2 ** 2 - 4 * a2 * c2)
+    sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
     r2 = (b2 - sq2) / (2 * a2)
 
     a3 = 4 * min_overlap
@@ -52,7 +54,7 @@ def gaussian_radius(det_size, min_overlap=0.7):
     b3 = -2 * min_overlap * (height + width)
 
     c3 = (min_overlap - 1) * width * height
-    sq3 = np.sqrt(b3 ** 2 - 4 * a3 * c3)
+    sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
     r3 = (b3 + sq3) / (2 * a3)
 
     return min(r1, r2, r3)
@@ -63,10 +65,14 @@ def gaussian2D(shape, sigma=(1, 1), rho=0):
         sigma = (sigma, sigma)
     sigma_x, sigma_y = sigma
 
-    m, n = [(ss - 1.) / 2. for ss in shape]
-    y, x = np.ogrid[-m:m+1, -n:n+1]
+    m, n = [(ss - 1.0) / 2.0 for ss in shape]
+    y, x = np.ogrid[-m : m + 1, -n : n + 1]
 
-    energy = (x * x) / (sigma_x * sigma_x) - 2 * rho * x * y / (sigma_x * sigma_y) + (y * y) / (sigma_y * sigma_y)
+    energy = (
+        (x * x) / (sigma_x * sigma_x)
+        - 2 * rho * x * y / (sigma_x * sigma_y)
+        + (y * y) / (sigma_y * sigma_y)
+    )
     h = np.exp(-energy / (2 * (1 - rho * rho)))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
@@ -83,16 +89,16 @@ def draw_umich_gaussian(heatmap, center, radius, k=1):
     left, right = min(x, radius), min(width - x, radius + 1)
     top, bottom = min(y, radius), min(height - y, radius + 1)
 
-    masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
-    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:radius + right]
-    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0: # TODO debug
+    masked_heatmap = heatmap[y - top : y + bottom, x - left : x + right]
+    masked_gaussian = gaussian[radius - top : radius + bottom, radius - left : radius + right]
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:  # TODO debug
         np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
     return heatmap
 
 
 def draw_distribution(heatmap, center, sigma_x, sigma_y, rho, radius, k=1):
     diameter = 2 * radius + 1
-    gaussian = gaussian2D((diameter, diameter), (sigma_x/3, sigma_y/3), rho)
+    gaussian = gaussian2D((diameter, diameter), (sigma_x / 3, sigma_y / 3), rho)
 
     x, y = int(center[0]), int(center[1])
 
@@ -101,9 +107,9 @@ def draw_distribution(heatmap, center, sigma_x, sigma_y, rho, radius, k=1):
     left, right = min(x, radius), min(width - x, radius + 1)
     top, bottom = min(y, radius), min(height - y, radius + 1)
 
-    masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
-    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:radius + right]
-    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0: # TODO debug
+    masked_heatmap = heatmap[y - top : y + bottom, x - left : x + right]
+    masked_gaussian = gaussian[radius - top : radius + bottom, radius - left : radius + right]
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:  # TODO debug
         np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
     return heatmap
 
@@ -145,12 +151,9 @@ def get_dir(src_point, rot_rad):
     return src_result
 
 
-def get_affine_transform(center,
-                         scale,
-                         rot,
-                         output_size,
-                         shift=np.array([0, 0], dtype=np.float32),
-                         inv=0):
+def get_affine_transform(
+    center, scale, rot, output_size, shift=np.array([0, 0], dtype=np.float32), inv=0
+):
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
@@ -199,28 +202,28 @@ def grayscale(image):
 
 
 def lighting_(data_rng, image, alphastd, eigval, eigvec):
-    alpha = data_rng.normal(scale=alphastd, size=(3, ))
+    alpha = data_rng.normal(scale=alphastd, size=(3,))
     image += np.dot(eigvec, eigval * alpha)
 
 
 def blend_(alpha, image1, image2):
     image1 *= alpha
-    image2 *= (1 - alpha)
+    image2 *= 1 - alpha
     image1 += image2
 
 
 def saturation_(data_rng, image, gs, gs_mean, var):
-    alpha = 1. + data_rng.uniform(low=-var, high=var)
+    alpha = 1.0 + data_rng.uniform(low=-var, high=var)
     blend_(alpha, image, gs[:, :, None])
 
 
 def brightness_(data_rng, image, gs, gs_mean, var):
-    alpha = 1. + data_rng.uniform(low=-var, high=var)
+    alpha = 1.0 + data_rng.uniform(low=-var, high=var)
     image *= alpha
 
 
 def contrast_(data_rng, image, gs, gs_mean, var):
-    alpha = 1. + data_rng.uniform(low=-var, high=var)
+    alpha = 1.0 + data_rng.uniform(low=-var, high=var)
     blend_(alpha, image, gs_mean)
 
 
@@ -245,34 +248,38 @@ def blur_aug(inp):
 
 def gaussian_blur(image, sigma):
     from scipy import ndimage
+
     if image.ndim == 2:
         image[:, :] = ndimage.gaussian_filter(image[:, :], sigma, mode="mirror")
     else:
         nb_channels = image.shape[2]
         for channel in range(nb_channels):
-            image[:, :, channel] = ndimage.gaussian_filter(image[:, :, channel], sigma, mode="mirror")
+            image[:, :, channel] = ndimage.gaussian_filter(
+                image[:, :, channel], sigma, mode="mirror"
+            )
+
 
 def gaussian_radius(det_size, min_overlap=0.7):
-  height, width = det_size
+    height, width = det_size
 
-  a1  = 1
-  b1  = (height + width)
-  c1  = width * height * (1 - min_overlap) / (1 + min_overlap)
-  sq1 = np.sqrt(b1 ** 2 - 4 * a1 * c1)
-  r1  = (b1 + sq1) / 2
+    a1 = 1
+    b1 = height + width
+    c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+    sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+    r1 = (b1 + sq1) / 2
 
-  a2  = 4
-  b2  = 2 * (height + width)
-  c2  = (1 - min_overlap) * width * height
-  sq2 = np.sqrt(b2 ** 2 - 4 * a2 * c2)
-  r2  = (b2 + sq2) / 2
+    a2 = 4
+    b2 = 2 * (height + width)
+    c2 = (1 - min_overlap) * width * height
+    sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+    r2 = (b2 + sq2) / 2
 
-  a3  = 4 * min_overlap
-  b3  = -2 * min_overlap * (height + width)
-  c3  = (min_overlap - 1) * width * height
-  sq3 = np.sqrt(b3 ** 2 - 4 * a3 * c3)
-  r3  = (b3 + sq3) / 2
-  return min(r1, r2, r3)
+    a3 = 4 * min_overlap
+    b3 = -2 * min_overlap * (height + width)
+    c3 = (min_overlap - 1) * width * height
+    sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+    r3 = (b3 + sq3) / 2
+    return min(r1, r2, r3)
 
 
 def inter_from_mask(pred, gt):
@@ -304,10 +311,10 @@ def inter_from_polys(poly, w, h, gt_mask):
 
 def select_point(shape, poly, gt_mask):
     for i in range(cfg.max_iter):
-        y = np.random.randint(shape[0] - poly['bbox'][3])
-        x = np.random.randint(shape[1] - poly['bbox'][2])
-        delta = np.array([poly['bbox'][0] - x, poly['bbox'][1] - y])
-        poly_move = np.array(poly['poly']) - delta
+        y = np.random.randint(shape[0] - poly["bbox"][3])
+        x = np.random.randint(shape[1] - poly["bbox"][2])
+        delta = np.array([poly["bbox"][0] - x, poly["bbox"][1] - y])
+        poly_move = np.array(poly["poly"]) - delta
         inter = inter_from_polys(poly_move, shape[1], shape[0], gt_mask)
         if inter:
             return x, y
@@ -316,8 +323,8 @@ def select_point(shape, poly, gt_mask):
 
 
 def transform_small_gt(poly, box, x, y):
-    delta = np.array([poly['bbox'][0] - x, poly['bbox'][1] - y])
-    poly['poly'] -= delta
+    delta = np.array([poly["bbox"][0] - x, poly["bbox"][1] - y])
+    poly["poly"] -= delta
     box[:2] -= delta
     box[2:] -= delta
     return poly, box
@@ -325,7 +332,7 @@ def transform_small_gt(poly, box, x, y):
 
 def get_mask_img(img, poly):
     mask = np.zeros(img.shape[:2])[..., np.newaxis]
-    cv2.fillPoly(mask, [np.round(poly['poly']).astype(int)], 1)
+    cv2.fillPoly(mask, [np.round(poly["poly"]).astype(int)], 1)
     poly_img = img * mask
     mask = mask[..., 0]
     return poly_img, mask
@@ -348,7 +355,7 @@ def get_gt_mask(img, poly):
     mask = np.zeros(img.shape[:2])[..., np.newaxis]
     for i in range(len(poly)):
         for j in range(len(poly[i])):
-            cv2.fillPoly(mask, [np.round(poly[i][j]['poly']).astype(int)], 1)
+            cv2.fillPoly(mask, [np.round(poly[i][j]["poly"]).astype(int)], 1)
     return mask
 
 
@@ -358,9 +365,11 @@ def small_aug(img, poly, box, label, num):
     for i in range(N):
         if len(poly[i]) > 1:
             continue
-        if poly[i][0]['area'] < 32*32:
+        if poly[i][0]["area"] < 32 * 32:
             for k in range(num):
-                img, poly_s, box_s, gt_mask = add_small_obj(img, gt_mask, poly[i][0].copy(), box[i].copy(), poly)
+                img, poly_s, box_s, gt_mask = add_small_obj(
+                    img, gt_mask, poly[i][0].copy(), box[i].copy(), poly
+                )
                 if len(box_s) == 0:
                     continue
                 poly.append([poly_s])
@@ -381,8 +390,7 @@ def _nms(heat, kernel=3):
     pad = (kernel - 1) // 2
 
     # find the local minimum of heat within the neighborhood kernel x kernel
-    hmax = nn.functional.max_pool2d(
-        heat, (kernel, kernel), stride=1, padding=pad)
+    hmax = nn.functional.max_pool2d(heat, (kernel, kernel), stride=1, padding=pad)
     keep = (hmax == heat).float()
     return heat * keep
 
@@ -409,8 +417,7 @@ def _topk(scores, K=40):
 
     topk_score, topk_ind = torch.topk(topk_scores.view(batch, -1), K)
     topk_clses = (topk_ind / K).int()
-    topk_inds = _gather_feat(
-        topk_inds.view(batch, -1, 1), topk_ind).view(batch, K)
+    topk_inds = _gather_feat(topk_inds.view(batch, -1, 1), topk_ind).view(batch, K)
     topk_ys = _gather_feat(topk_ys.view(batch, -1, 1), topk_ind).view(batch, K)
     topk_xs = _gather_feat(topk_xs.view(batch, -1, 1), topk_ind).view(batch, K)
 
@@ -419,21 +426,26 @@ def _topk(scores, K=40):
 
 def clip_to_image(bbox, h, w):
     bbox[..., :2] = torch.clamp(bbox[..., :2], min=0)
-    bbox[..., 2] = torch.clamp(bbox[..., 2], max=w-1)
-    bbox[..., 3] = torch.clamp(bbox[..., 3], max=h-1)
+    bbox[..., 2] = torch.clamp(bbox[..., 2], max=w - 1)
+    bbox[..., 3] = torch.clamp(bbox[..., 3], max=h - 1)
     return bbox
+
 
 def circle_clip_to_image(circle, h, w):
     if cfg.filter_border:
         b_size = cfg.filter_border
-        ind1 = torch.logical_or(circle[:, :, 0] - circle[:, :, 2] < 0,  circle[:, :, 1] - circle[:, :, 2] < 0)
-        ind2 = torch.logical_or(circle[:, :, 0] + circle[:, :, 2] > w - 1, circle[:, :, 1] + circle[:, :, 2] > h - 1)
+        ind1 = torch.logical_or(
+            circle[:, :, 0] - circle[:, :, 2] < 0, circle[:, :, 1] - circle[:, :, 2] < 0
+        )
+        ind2 = torch.logical_or(
+            circle[:, :, 0] + circle[:, :, 2] > w - 1, circle[:, :, 1] + circle[:, :, 2] > h - 1
+        )
         ind = torch.logical_not(torch.logical_or(ind1, ind2))
         circle = ind.resize(circle.shape[0], 1000, 1).repeat(1, 1, 5).int().float() * circle
     else:
         circle[..., :2] = torch.clamp(circle[..., :2], min=0)
-        circle[..., 0] = torch.clamp(circle[..., 0], max=w-1)
-        circle[..., 1] = torch.clamp(circle[..., 1], max=h-1)
+        circle[..., 0] = torch.clamp(circle[..., 0], max=w - 1)
+        circle[..., 1] = torch.clamp(circle[..., 1], max=h - 1)
     return circle
 
 
@@ -459,4 +471,3 @@ def box_iou(box1, box2):
 def sigmoid(x):
     y = torch.clamp(x.sigmoid_(), min=1e-4, max=1 - 1e-4)
     return y
-

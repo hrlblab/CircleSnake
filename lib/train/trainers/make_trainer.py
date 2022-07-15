@@ -1,11 +1,12 @@
-from .trainer import Trainer
 import imp
 import os
 
+from .trainer import Trainer
+
 
 def _wrapper_factory(cfg, network):
-    module = '.'.join(['lib.train.trainers', cfg.task])
-    path = os.path.join('lib/train/trainers', cfg.task+'.py')
+    module = ".".join(["lib.train.trainers", cfg.task])
+    path = os.path.join("lib/train/trainers", cfg.task + ".py")
     network_wrapper = imp.load_source(module, path).NetworkWrapper(network)
     return network_wrapper
 

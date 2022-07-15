@@ -3,8 +3,10 @@
 # Convert instances from png files to a dictionary
 #
 
-from __future__ import print_function, absolute_import, division
-import os, sys
+from __future__ import absolute_import, division, print_function
+
+import os
+import sys
 
 # Cityscapes imports
 from external.cityscapesscripts.evaluation.instance import *
@@ -66,7 +68,7 @@ def instances2dict(imageFileList, verbose=False):
         imgCount += 1
 
         if verbose:
-            print("\rImages Processed: {}".format(imgCount), end=' ')
+            print("\rImages Processed: {}".format(imgCount), end=" ")
             sys.stdout.flush()
 
     if verbose:
@@ -77,9 +79,9 @@ def instances2dict(imageFileList, verbose=False):
 
 def main(argv):
     fileList = []
-    if (len(argv) > 2):
+    if len(argv) > 2:
         for arg in argv:
-            if ("png" in arg):
+            if "png" in arg:
                 fileList.append(arg)
     instances2dict(fileList, True)
 

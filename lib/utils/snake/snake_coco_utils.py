@@ -2,17 +2,18 @@ from lib.utils.snake.snake_cityscapes_utils import *
 
 input_scale = np.array([512, 512])
 
+
 def augment_circle(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = max(height, width) * 1.0
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.uniform(0.6, 1.4)
         # seed = np.random.randint(0, len(polys))
         # index = np.random.randint(0, len(polys[seed][0]))
@@ -35,7 +36,6 @@ def augment_circle(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
         center[0] = np.random.randint(low=w_border, high=width - w_border - 1)
         center[1] = np.random.randint(low=h_border, high=height - h_border - 1)
 
-
         # flip augmentation
         if np.random.random() < 0.5:
             flipped = True
@@ -43,12 +43,12 @@ def augment_circle(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
             center[0] = width - center[0] - 1
 
     input_w, input_h = input_scale
-    if split != 'train':
+    if split != "train":
         center = np.array([width // 2, height // 2])
         # scale = np.array([width, height])
         x = 32
-        input_w = (int(width / 1.) | (x - 1)) + 1
-        input_h = (int(height / 1.) | (x - 1)) + 1
+        input_w = (int(width / 1.0) | (x - 1)) + 1
+        input_h = (int(height / 1.0) | (x - 1)) + 1
         scale = np.array([input_w, input_h])
         # input_w, input_h = (width + x - 1) // x * x, (height + x - 1) // x * x
         # input_w, input_h = int((width / 0.5 + x - 1) // x * x), int((height / 0.5 + x - 1) // x * x)
@@ -60,8 +60,8 @@ def augment_circle(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         data_utils.color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # data_utils.blur_aug(inp)
 
@@ -75,32 +75,34 @@ def augment_circle(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 
     return orig_img, inp, trans_input, trans_output, flipped, center, scale, inp_out_hw
 
+
 def affine_transform_point(pt, t):
-    new_pt = np.array([pt[0], pt[1], 1.], dtype=np.float32).T
+    new_pt = np.array([pt[0], pt[1], 1.0], dtype=np.float32).T
     new_pt = np.dot(t, new_pt)
     return new_pt[:2]
+
 
 def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = max(height, width)
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.uniform(0.6, 1.4)
         seed = np.random.randint(0, len(polys))
         index = np.random.randint(0, len(polys[seed][0]))
         x, y = polys[seed][0][index]
         center[0] = x
         border = scale[0] // 2 if scale[0] < width else width - scale[0] // 2
-        center[0] = np.clip(center[0], a_min=border, a_max=width-border)
+        center[0] = np.clip(center[0], a_min=border, a_max=width - border)
         center[1] = y
         border = scale[1] // 2 if scale[1] < height else height - scale[1] // 2
-        center[1] = np.clip(center[1], a_min=border, a_max=height-border)
+        center[1] = np.clip(center[1], a_min=border, a_max=height - border)
 
         # flip augmentation
         if np.random.random() < 0.5:
@@ -109,12 +111,12 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
             center[0] = width - center[0] - 1
 
     input_w, input_h = input_scale
-    if split != 'train':
+    if split != "train":
         center = np.array([width // 2, height // 2])
         scale = np.array([width, height])
         x = 32
-        input_w = (int(width / 1.) | (x - 1)) + 1
-        input_h = (int(height / 1.) | (x - 1)) + 1
+        input_w = (int(width / 1.0) | (x - 1)) + 1
+        input_h = (int(height / 1.0) | (x - 1)) + 1
         scale = np.array([input_w, input_h])
         # input_w, input_h = (width + x - 1) // x * x, (height + x - 1) // x * x
         # input_w, input_h = int((width / 0.5 + x - 1) // x * x), int((height / 0.5 + x - 1) // x * x)
@@ -125,8 +127,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         data_utils.color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # data_utils.blur_aug(inp)
 
@@ -139,6 +141,7 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     inp_out_hw = (input_h, input_w, output_h, output_w)
 
     return orig_img, inp, trans_input, trans_output, flipped, center, scale, inp_out_hw
+
 
 # Smallest enclosing circle
 #
@@ -160,8 +163,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 # If not, see <http://www.gnu.org/licenses/>.
 
 
-import math, random
-
+import math
+import random
 
 # Data conventions: A point is a pair of floats (x, y). A circle is a triple of floats (center x, center y, radius).
 
@@ -215,12 +218,16 @@ def _make_circle_two_points(points, p, q):
         if c is None:
             continue
         elif cross > 0.0 and (
-                left is None or _cross_product(px, py, qx, qy, c[0], c[1]) > _cross_product(px, py, qx, qy, left[0],
-                                                                                            left[1])):
+            left is None
+            or _cross_product(px, py, qx, qy, c[0], c[1])
+            > _cross_product(px, py, qx, qy, left[0], left[1])
+        ):
             left = c
         elif cross < 0.0 and (
-                right is None or _cross_product(px, py, qx, qy, c[0], c[1]) < _cross_product(px, py, qx, qy, right[0],
-                                                                                             right[1])):
+            right is None
+            or _cross_product(px, py, qx, qy, c[0], c[1])
+            < _cross_product(px, py, qx, qy, right[0], right[1])
+        ):
             right = c
 
     # Select which circle to return
@@ -246,17 +253,33 @@ def make_circumcircle(a, b, c):
     # Mathematical algorithm from Wikipedia: Circumscribed circle
     ox = (min(a[0], b[0], c[0]) + max(a[0], b[0], c[0])) / 2
     oy = (min(a[1], b[1], c[1]) + max(a[1], b[1], c[1])) / 2
-    ax = a[0] - ox;
+    ax = a[0] - ox
     ay = a[1] - oy
-    bx = b[0] - ox;
+    bx = b[0] - ox
     by = b[1] - oy
-    cx = c[0] - ox;
+    cx = c[0] - ox
     cy = c[1] - oy
     d = (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by)) * 2.0
     if d == 0.0:
         return None
-    x = ox + ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d
-    y = oy + ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d
+    x = (
+        ox
+        + (
+            (ax * ax + ay * ay) * (by - cy)
+            + (bx * bx + by * by) * (cy - ay)
+            + (cx * cx + cy * cy) * (ay - by)
+        )
+        / d
+    )
+    y = (
+        oy
+        + (
+            (ax * ax + ay * ay) * (cx - bx)
+            + (bx * bx + by * by) * (ax - cx)
+            + (cx * cx + cy * cy) * (bx - ax)
+        )
+        / d
+    )
     ra = math.hypot(x - a[0], y - a[1])
     rb = math.hypot(x - b[0], y - b[1])
     rc = math.hypot(x - c[0], y - c[1])
@@ -290,6 +313,4 @@ def numerical_stable_circle(points):
     y = result[1] + mean_pts[1]
     r = result[2]
 
-    return x,y,r
-
-
+    return x, y, r

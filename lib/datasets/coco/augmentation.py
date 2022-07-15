@@ -1,17 +1,18 @@
-from lib.utils.data_utils import get_border, get_affine_transform, color_aug
-import numpy as np
 import cv2
+import numpy as np
+
+from lib.utils.data_utils import color_aug, get_affine_transform, get_border
 
 
 def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = max(img.shape[0], img.shape[1]) * 1.0
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.choice(np.arange(0.6, 1.4, 0.1))
         w_border = get_border(128, img.shape[1])
         h_border = get_border(128, img.shape[0])
@@ -30,8 +31,8 @@ def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         color_aug(_data_rng, inp, _eig_val, _eig_vec)
 
     # normalize the image

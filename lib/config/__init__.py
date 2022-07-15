@@ -1,1 +1,1 @@
-from .config import cfg, args
+from .config import args, cfg

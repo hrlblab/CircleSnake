@@ -1,10 +1,11 @@
-import torch
 import os
-from torch import nn
-import numpy as np
-import torch.nn.functional
 from collections import OrderedDict
+
+import numpy as np
+import torch
+import torch.nn.functional
 from termcolor import colored
+from torch import nn
 
 
 def sigmoid(x):
@@ -13,12 +14,12 @@ def sigmoid(x):
 
 
 def _neg_loss(pred, gt):
-    ''' Modified focal loss. Exactly the same as CornerNet.
-        Runs faster and costs a little bit more memory
-        Arguments:
-            pred (batch x c x h x w)
-            gt_regr (batch x c x h x w)
-    '''
+    """Modified focal loss. Exactly the same as CornerNet.
+    Runs faster and costs a little bit more memory
+    Arguments:
+        pred (batch x c x h x w)
+        gt_regr (batch x c x h x w)
+    """
     pos_inds = gt.eq(1).float()
     neg_inds = gt.lt(1).float()
 
@@ -41,7 +42,8 @@ def _neg_loss(pred, gt):
 
 
 class FocalLoss(nn.Module):
-    '''nn.Module warpper for focal loss'''
+    """nn.Module warpper for focal loss"""
+
     def __init__(self):
         super(FocalLoss, self).__init__()
         self.neg_loss = _neg_loss
@@ -50,7 +52,9 @@ class FocalLoss(nn.Module):
         return self.neg_loss(out, target)
 
 
-def smooth_l1_loss(vertex_pred, vertex_targets, vertex_weights, sigma=1.0, normalize=True, reduce=True):
+def smooth_l1_loss(
+    vertex_pred, vertex_targets, vertex_weights, sigma=1.0, normalize=True, reduce=True
+):
     """
     :param vertex_pred:     [b, vn*2, h, w]
     :param vertex_targets:  [b, vn*2, h, w]
@@ -61,16 +65,19 @@ def smooth_l1_loss(vertex_pred, vertex_targets, vertex_weights, sigma=1.0, norma
     :return:
     """
     b, ver_dim, _, _ = vertex_pred.shape
-    sigma_2 = sigma ** 2
+    sigma_2 = sigma**2
     vertex_diff = vertex_pred - vertex_targets
     diff = vertex_weights * vertex_diff
     abs_diff = torch.abs(diff)
-    smoothL1_sign = (abs_diff < 1. / sigma_2).detach().float()
-    in_loss = torch.pow(diff, 2) * (sigma_2 / 2.) * smoothL1_sign \
-              + (abs_diff - (0.5 / sigma_2)) * (1. - smoothL1_sign)
+    smoothL1_sign = (abs_diff < 1.0 / sigma_2).detach().float()
+    in_loss = torch.pow(diff, 2) * (sigma_2 / 2.0) * smoothL1_sign + (
+        abs_diff - (0.5 / sigma_2)
+    ) * (1.0 - smoothL1_sign)
 
     if normalize:
-        in_loss = torch.sum(in_loss.view(b, -1), 1) / (ver_dim * torch.sum(vertex_weights.view(b, -1), 1) + 1e-3)
+        in_loss = torch.sum(in_loss.view(b, -1), 1) / (
+            ver_dim * torch.sum(vertex_weights.view(b, -1), 1) + 1e-3
+        )
 
     if reduce:
         in_loss = torch.mean(in_loss)
@@ -140,16 +147,18 @@ class PolyMatchingLoss(nn.Module):
                 pidx = (np.arange(pnum) + i) % pnum
                 pidxall[b, i] = pidx
 
-        device = torch.device('cuda')
+        device = torch.device("cuda")
         pidxall = torch.from_numpy(np.reshape(pidxall, newshape=(batch_size, -1))).to(device)
 
-        self.feature_id = pidxall.unsqueeze_(2).long().expand(pidxall.size(0), pidxall.size(1), 2).detach()
+        self.feature_id = (
+            pidxall.unsqueeze_(2).long().expand(pidxall.size(0), pidxall.size(1), 2).detach()
+        )
 
     def forward(self, pred, gt, loss_type="L2"):
         pnum = self.pnum
         batch_size = pred.size()[0]
         feature_id = self.feature_id.expand(batch_size, self.feature_id.size(1), 2)
-        device = torch.device('cuda')
+        device = torch.device("cuda")
 
         gt_expand = torch.gather(gt, 1, feature_id).view(batch_size, pnum, pnum, 2)
 
@@ -158,7 +167,7 @@ class PolyMatchingLoss(nn.Module):
         dis = pred_expand - gt_expand
 
         if loss_type == "L2":
-            dis = (dis ** 2).sum(3).sqrt().sum(2)
+            dis = (dis**2).sum(3).sqrt().sum(2)
         elif loss_type == "L1":
             dis = torch.abs(dis).sum(3).sum(2)
 
@@ -212,11 +221,11 @@ def _tranpose_and_gather_feat(feat, ind):
 
 
 class Ind2dRegL1Loss(nn.Module):
-    def __init__(self, type='l1'):
+    def __init__(self, type="l1"):
         super(Ind2dRegL1Loss, self).__init__()
-        if type == 'l1':
+        if type == "l1":
             self.loss = torch.nn.functional.l1_loss
-        elif type == 'smooth_l1':
+        elif type == "smooth_l1":
             self.loss = torch.nn.functional.smooth_l1_loss
 
     def forward(self, output, target, ind, ind_mask):
@@ -225,24 +234,24 @@ class Ind2dRegL1Loss(nn.Module):
         ind = ind.view(b, max_objs * max_parts)
         pred = _tranpose_and_gather_feat(output, ind).view(b, max_objs, max_parts, output.size(1))
         mask = ind_mask.unsqueeze(3).expand_as(pred)
-        loss = self.loss(pred * mask, target * mask, reduction='sum')
+        loss = self.loss(pred * mask, target * mask, reduction="sum")
         loss = loss / (mask.sum() + 1e-4)
         return loss
 
 
 class IndL1Loss1d(nn.Module):
-    def __init__(self, type='l1'):
+    def __init__(self, type="l1"):
         super(IndL1Loss1d, self).__init__()
-        if type == 'l1':
+        if type == "l1":
             self.loss = torch.nn.functional.l1_loss
-        elif type == 'smooth_l1':
+        elif type == "smooth_l1":
             self.loss = torch.nn.functional.smooth_l1_loss
 
     def forward(self, output, target, ind, weight):
         """ind: [b, n]"""
         output = _tranpose_and_gather_feat(output, ind)
         weight = weight.unsqueeze(2)
-        loss = self.loss(output * weight, target * weight, reduction='sum')
+        loss = self.loss(output * weight, target * weight, reduction="sum")
         loss = loss / (weight.sum() * output.size(2) + 1e-4)
         return loss
 
@@ -263,9 +272,9 @@ class GeoCrossEntropyLoss(nn.Module):
         return loss
 
 
-def load_model(net, optim, scheduler, recorder, model_dir, resume=True, epoch=-1, pretrain=''):
+def load_model(net, optim, scheduler, recorder, model_dir, resume=True, epoch=-1, pretrain=""):
     if not resume:
-        os.system('rm -rf {}'.format(model_dir))
+        os.system("rm -rf {}".format(model_dir))
         return 0
 
     # Load pretrained model
@@ -273,14 +282,14 @@ def load_model(net, optim, scheduler, recorder, model_dir, resume=True, epoch=-1
         model_dir = os.path.join("data", "pretrain", pretrain) + ".pth"
 
         if not os.path.exists(model_dir):
-            print(colored('WARNING: NO MODEL LOADED !!!', 'red'))
+            print(colored("WARNING: NO MODEL LOADED !!!", "red"))
             return 0
 
-        print('load model: {}'.format(model_dir))
+        print("load model: {}".format(model_dir))
         pretrained_model = torch.load(model_dir)
 
         try:
-            net.load_state_dict(pretrained_model['state_dict'], strict=False)
+            net.load_state_dict(pretrained_model["state_dict"], strict=False)
         except RuntimeError as e:
             print(str(e))
             # net.load_state_dict(pretrained_model['state_dict'], strict=False)
@@ -292,44 +301,47 @@ def load_model(net, optim, scheduler, recorder, model_dir, resume=True, epoch=-1
         print(model_dir)
 
         if not os.path.exists(model_dir):
-            print(colored('WARNING: NO MODEL LOADED !!!', 'red'))
+            print(colored("WARNING: NO MODEL LOADED !!!", "red"))
             return 0
 
-        pths = [int(pth.split('.')[0]) for pth in os.listdir(model_dir)]
+        pths = [int(pth.split(".")[0]) for pth in os.listdir(model_dir)]
         if len(pths) == 0:
-            print(colored('WARNING: NO MODEL LOADED !!!', 'red'))
+            print(colored("WARNING: NO MODEL LOADED !!!", "red"))
             return 0
         if epoch == -1:
             pth = max(pths)
         else:
             pth = epoch
 
-        print('load model: {}'.format(os.path.join(model_dir, '{}.pth'.format(pth))))
-        pretrained_model = torch.load(os.path.join(model_dir, '{}.pth'.format(pth)))
+        print("load model: {}".format(os.path.join(model_dir, "{}.pth".format(pth))))
+        pretrained_model = torch.load(os.path.join(model_dir, "{}.pth".format(pth)))
 
-        net.load_state_dict(pretrained_model['net'])
-        optim.load_state_dict(pretrained_model['optim'])
-        scheduler.load_state_dict(pretrained_model['scheduler'])
-        recorder.load_state_dict(pretrained_model['recorder'])
+        net.load_state_dict(pretrained_model["net"])
+        optim.load_state_dict(pretrained_model["optim"])
+        scheduler.load_state_dict(pretrained_model["scheduler"])
+        recorder.load_state_dict(pretrained_model["recorder"])
 
-        return pretrained_model['epoch'] + 1
+        return pretrained_model["epoch"] + 1
 
 
 def save_model(net, optim, scheduler, recorder, epoch, model_dir):
-    os.system('mkdir -p {}'.format(model_dir))
-    torch.save({
-        'net': net.state_dict(),
-        'optim': optim.state_dict(),
-        'scheduler': scheduler.state_dict(),
-        'recorder': recorder.state_dict(),
-        'epoch': epoch
-    }, os.path.join(model_dir, '{}.pth'.format(epoch)))
+    os.system("mkdir -p {}".format(model_dir))
+    torch.save(
+        {
+            "net": net.state_dict(),
+            "optim": optim.state_dict(),
+            "scheduler": scheduler.state_dict(),
+            "recorder": recorder.state_dict(),
+            "epoch": epoch,
+        },
+        os.path.join(model_dir, "{}.pth".format(epoch)),
+    )
 
     # remove previous pretrained model if the number of models is too big
-    pths = [int(pth.split('.')[0]) for pth in os.listdir(model_dir)]
+    pths = [int(pth.split(".")[0]) for pth in os.listdir(model_dir)]
     if len(pths) <= 200:
         return
-    os.system('rm {}'.format(os.path.join(model_dir, '{}.pth'.format(min(pths)))))
+    os.system("rm {}".format(os.path.join(model_dir, "{}.pth".format(min(pths)))))
 
 
 def load_network(net, model_dir, resume=True, epoch=-1, strict=True):
@@ -339,32 +351,32 @@ def load_network(net, model_dir, resume=True, epoch=-1, strict=True):
     print(model_dir)
 
     if not os.path.exists(model_dir):
-        print(colored('WARNING: NO MODEL LOADED !!!', 'red'))
+        print(colored("WARNING: NO MODEL LOADED !!!", "red"))
         return 0
 
-    pths = [int(pth.split('.')[0]) for pth in os.listdir(model_dir) if 'pth' in pth]
+    pths = [int(pth.split(".")[0]) for pth in os.listdir(model_dir) if "pth" in pth]
     if len(pths) == 0:
-        print(colored('WARNING: NO MODEL LOADED !!!', 'red'))
+        print(colored("WARNING: NO MODEL LOADED !!!", "red"))
         return 0
     if epoch == -1:
         pth = max(pths)
     else:
         pth = epoch
-    print('load model: {}'.format(os.path.join(model_dir, '{}.pth'.format(pth))))
-    pretrained_model = torch.load(os.path.join(model_dir, '{}.pth'.format(pth)))
+    print("load model: {}".format(os.path.join(model_dir, "{}.pth".format(pth))))
+    pretrained_model = torch.load(os.path.join(model_dir, "{}.pth".format(pth)))
     # net.load_state_dict(pretrained_model['net'], strict=strict)
     try:
-        net.load_state_dict(pretrained_model['state_dict'], strict=False)
+        net.load_state_dict(pretrained_model["state_dict"], strict=False)
     except:
-        net.load_state_dict(pretrained_model['net'], strict=False)
-    return pretrained_model['epoch'] + 1
+        net.load_state_dict(pretrained_model["net"], strict=False)
+    return pretrained_model["epoch"] + 1
 
 
 def remove_net_prefix(net, prefix):
     net_ = OrderedDict()
     for k in net.keys():
         if k.startswith(prefix):
-            net_[k[len(prefix):]] = net[k]
+            net_[k[len(prefix) :]] = net[k]
         else:
             net_[k] = net[k]
     return net_
@@ -381,7 +393,7 @@ def replace_net_prefix(net, orig_prefix, prefix):
     net_ = OrderedDict()
     for k in net.keys():
         if k.startswith(orig_prefix):
-            net_[prefix + k[len(orig_prefix):]] = net[k]
+            net_[prefix + k[len(orig_prefix) :]] = net[k]
         else:
             net_[k] = net[k]
     return net_

@@ -19,5 +19,5 @@ test:
     batch_size: 1
 
 heads: {'ct_hm': 1, 'wh': 2, 'reg': 2}
-segm_or_bbox: 'segm'
-ct_thresh: 0.0
+segm_or_bbox: 'bbox'
+ct_thresh: 0.05

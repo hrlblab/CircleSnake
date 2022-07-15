@@ -26,7 +26,10 @@ def sample_point(cps, p_num, alpha=0.5):
     # print(auxillary_cps)
 
     t = torch.zeros([auxillary_cps.size(0), auxillary_cps.size(1)]).to(cps.device)
-    t[:, 1:] = torch.pow(torch.sum(torch.pow(auxillary_cps[:, 1:, :] - auxillary_cps[:, :-1, :], 2), dim=2), alpha/2)
+    t[:, 1:] = torch.pow(
+        torch.sum(torch.pow(auxillary_cps[:, 1:, :] - auxillary_cps[:, :-1, :], 2), dim=2),
+        alpha / 2,
+    )
     t = torch.cumsum(t, dim=1)
 
     # No need to calculate gradient w.r.t t.
@@ -34,35 +37,65 @@ def sample_point(cps, p_num, alpha=0.5):
     points = torch.zeros([cps.size(0), p_num * cp_num, cps.size(2)]).to(cps.device)
     temp_step = torch.arange(p_num).float().to(cps.device)
     temp_step_len = (t[:, 2:-1] - t[:, 1:-2]) / (p_num - 1)
-    v = torch.matmul(temp_step_len.unsqueeze(2), temp_step.unsqueeze(0).repeat([cps.size(0), 1, 1])).reshape([cps.size(0), -1])
-    v = torch.matmul(t[:, 1:-2].unsqueeze(2), torch.ones(cps.size(0), 1, p_num).to(cps.device)).reshape([cps.size(0), -1]) + v
+    v = torch.matmul(
+        temp_step_len.unsqueeze(2), temp_step.unsqueeze(0).repeat([cps.size(0), 1, 1])
+    ).reshape([cps.size(0), -1])
+    v = (
+        torch.matmul(
+            t[:, 1:-2].unsqueeze(2), torch.ones(cps.size(0), 1, p_num).to(cps.device)
+        ).reshape([cps.size(0), -1])
+        + v
+    )
     # vuse = v.clone()
     t0 = t[:, 0:-3].unsqueeze(2).repeat([1, 1, p_num]).reshape([cps.size(0), -1])
     t1 = t[:, 1:-2].unsqueeze(2).repeat([1, 1, p_num]).reshape([cps.size(0), -1])
     t2 = t[:, 2:-1].unsqueeze(2).repeat([1, 1, p_num]).reshape([cps.size(0), -1])
     t3 = t[:, 3:].unsqueeze(2).repeat([1, 1, p_num]).reshape([cps.size(0), -1])
 
-    auxillary_cps0 = auxillary_cps[:, 0:-3, :].unsqueeze(2).repeat([1, 1, p_num, 1]).reshape([cps.size(0), -1, 2])
-    auxillary_cps1 = auxillary_cps[:, 1:-2, :].unsqueeze(2).repeat([1, 1, p_num, 1]).reshape([cps.size(0), -1, 2])
-    auxillary_cps2 = auxillary_cps[:, 2:-1, :].unsqueeze(2).repeat([1, 1, p_num, 1]).reshape([cps.size(0), -1, 2])
-    auxillary_cps3 = auxillary_cps[:, 3:, :].unsqueeze(2).repeat([1, 1, p_num, 1]).reshape([cps.size(0), -1, 2])
+    auxillary_cps0 = (
+        auxillary_cps[:, 0:-3, :]
+        .unsqueeze(2)
+        .repeat([1, 1, p_num, 1])
+        .reshape([cps.size(0), -1, 2])
+    )
+    auxillary_cps1 = (
+        auxillary_cps[:, 1:-2, :]
+        .unsqueeze(2)
+        .repeat([1, 1, p_num, 1])
+        .reshape([cps.size(0), -1, 2])
+    )
+    auxillary_cps2 = (
+        auxillary_cps[:, 2:-1, :]
+        .unsqueeze(2)
+        .repeat([1, 1, p_num, 1])
+        .reshape([cps.size(0), -1, 2])
+    )
+    auxillary_cps3 = (
+        auxillary_cps[:, 3:, :].unsqueeze(2).repeat([1, 1, p_num, 1]).reshape([cps.size(0), -1, 2])
+    )
 
-    mx01 = ((t1 - v) / (t1 - t0)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps0 + \
-           ((v - t0) / (t1 - t0)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps1
+    mx01 = ((t1 - v) / (t1 - t0)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps0 + (
+        (v - t0) / (t1 - t0)
+    ).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps1
 
-    mx12 = ((t2 - v) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps1 + \
-           ((v - t1) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps2
+    mx12 = ((t2 - v) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps1 + (
+        (v - t1) / (t2 - t1)
+    ).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps2
 
-    mx23 = ((t3 - v) / (t3 - t2)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps2 + \
-           ((v - t2) / (t3 - t2)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps3
+    mx23 = ((t3 - v) / (t3 - t2)).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps2 + (
+        (v - t2) / (t3 - t2)
+    ).unsqueeze(2).repeat([1, 1, 2]) * auxillary_cps3
 
-    mx012 = ((t2 - v) / (t2 - t0)).unsqueeze(2).repeat([1, 1, 2]) * mx01 \
-            + ((v - t0) / (t2 - t0)).unsqueeze(2).repeat([1, 1, 2]) * mx12
+    mx012 = ((t2 - v) / (t2 - t0)).unsqueeze(2).repeat([1, 1, 2]) * mx01 + (
+        (v - t0) / (t2 - t0)
+    ).unsqueeze(2).repeat([1, 1, 2]) * mx12
 
-    mx123 = ((t3 - v) / (t3 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx12 \
-            + ((v - t1) / (t3 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx23
+    mx123 = ((t3 - v) / (t3 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx12 + (
+        (v - t1) / (t3 - t1)
+    ).unsqueeze(2).repeat([1, 1, 2]) * mx23
 
-    points[:, :] = ((t2 - v) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx012 \
-                   + ((v - t1) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx123
+    points[:, :] = ((t2 - v) / (t2 - t1)).unsqueeze(2).repeat([1, 1, 2]) * mx012 + (
+        (v - t1) / (t2 - t1)
+    ).unsqueeze(2).repeat([1, 1, 2]) * mx123
 
     return points

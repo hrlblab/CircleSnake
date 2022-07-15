@@ -14,12 +14,15 @@
 #
 
 # python imports
-from __future__ import print_function, absolute_import, division, unicode_literals
-import os
-import glob
-import sys
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
 import argparse
+import glob
 import json
+import os
+import sys
+
 import numpy as np
 
 # Image processing
@@ -46,10 +49,10 @@ from cityscapesscripts.helpers.labels import id2label, labels
 def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
     # Where to look for Cityscapes
     if cityscapesPath is None:
-        if 'CITYSCAPES_DATASET' in os.environ:
-            cityscapesPath = os.environ['CITYSCAPES_DATASET']
+        if "CITYSCAPES_DATASET" in os.environ:
+            cityscapesPath = os.environ["CITYSCAPES_DATASET"]
         else:
-            cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..')
+            cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
         cityscapesPath = os.path.join(cityscapesPath, "gtFine")
 
     if outputFolder is None:
@@ -59,17 +62,21 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
     for label in labels:
         if label.ignoreInEval:
             continue
-        categories.append({'id': int(label.trainId) if useTrainId else int(label.id),
-                           'name': label.name,
-                           'color': label.color,
-                           'supercategory': label.category,
-                           'isthing': 1 if label.hasInstances else 0})
+        categories.append(
+            {
+                "id": int(label.trainId) if useTrainId else int(label.id),
+                "name": label.name,
+                "color": label.color,
+                "supercategory": label.category,
+                "isthing": 1 if label.hasInstances else 0,
+            }
+        )
 
     # if only val set needs the conversion.
     # for setName in ["val"]:
     for setName in ["val", "train", "test"]:
         # how to search for all ground truth
-        searchFine   = os.path.join(cityscapesPath, setName, "*", "*_instanceIds.png")
+        searchFine = os.path.join(cityscapesPath, setName, "*", "*_instanceIds.png")
         # search files
         filesFine = glob.glob(searchFine)
         filesFine.sort()
@@ -78,7 +85,9 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
         # quit if we did not find anything
         if not files:
             printError(
-                "Did not find any files for {} set using matching pattern {}. Please consult the README.".format(setName, searchFine)
+                "Did not find any files for {} set using matching pattern {}. Please consult the README.".format(
+                    setName, searchFine
+                )
             )
         # a bit verbose
         print("Converting {} annotation files for {} set.".format(len(files), setName))
@@ -86,12 +95,16 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
         trainIfSuffix = "_trainId" if useTrainId else ""
         outputBaseFile = "cityscapes_panoptic_{}{}".format(setName, trainIfSuffix)
         outFile = os.path.join(outputFolder, "{}.json".format(outputBaseFile))
-        print("Json file with the annotations in panoptic format will be saved in {}".format(outFile))
+        print(
+            "Json file with the annotations in panoptic format will be saved in {}".format(outFile)
+        )
         panopticFolder = os.path.join(outputFolder, outputBaseFile)
         if not os.path.isdir(panopticFolder):
             print("Creating folder {} for panoptic segmentation PNGs".format(panopticFolder))
             os.mkdir(panopticFolder)
-        print("Corresponding segmentations in .png format will be saved in {}".format(panopticFolder))
+        print(
+            "Corresponding segmentations in .png format will be saved in {}".format(panopticFolder)
+        )
 
         images = []
         annotations = []
@@ -104,10 +117,14 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
             inputFileName = fileName.replace("_instanceIds.png", "_leftImg8bit.png")
             outputFileName = fileName.replace("_instanceIds.png", "_panoptic.png")
             # image entry, id for image is its filename without extension
-            images.append({"id": imageId,
-                           "width": int(originalFormat.shape[1]),
-                           "height": int(originalFormat.shape[0]),
-                           "file_name": inputFileName})
+            images.append(
+                {
+                    "id": imageId,
+                    "width": int(originalFormat.shape[1]),
+                    "height": int(originalFormat.shape[0]),
+                    "file_name": inputFileName,
+                }
+            )
 
             pan_format = np.zeros(
                 (originalFormat.shape[0], originalFormat.shape[1], 3), dtype=np.uint8
@@ -133,7 +150,7 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
                 color = [segmentId % 256, segmentId // 256, segmentId // 256 // 256]
                 pan_format[mask] = color
 
-                area = np.sum(mask) # segment area computation
+                area = np.sum(mask)  # segment area computation
 
                 # bbox computation for a segment
                 hor = np.sum(mask, axis=0)
@@ -146,41 +163,47 @@ def convert2panoptic(cityscapesPath=None, outputFolder=None, useTrainId=False):
                 height = vert_idx[-1] - y + 1
                 bbox = [int(x), int(y), int(width), int(height)]
 
-                segmInfo.append({"id": int(segmentId),
-                                 "category_id": int(categoryId),
-                                 "area": int(area),
-                                 "bbox": bbox,
-                                 "iscrowd": isCrowd})
+                segmInfo.append(
+                    {
+                        "id": int(segmentId),
+                        "category_id": int(categoryId),
+                        "area": int(area),
+                        "bbox": bbox,
+                        "iscrowd": isCrowd,
+                    }
+                )
 
-            annotations.append({'image_id': imageId,
-                                'file_name': outputFileName,
-                                "segments_info": segmInfo})
+            annotations.append(
+                {"image_id": imageId, "file_name": outputFileName, "segments_info": segmInfo}
+            )
 
             Image.fromarray(pan_format).save(os.path.join(panopticFolder, outputFileName))
 
-            print("\rProgress: {:>3.2f} %".format((progress + 1) * 100 / len(files)), end=' ')
+            print("\rProgress: {:>3.2f} %".format((progress + 1) * 100 / len(files)), end=" ")
             sys.stdout.flush()
 
         print("\nSaving the json file {}".format(outFile))
-        d = {'images': images,
-             'annotations': annotations,
-             'categories': categories}
-        with open(outFile, 'w') as f:
+        d = {"images": images, "annotations": annotations, "categories": categories}
+        with open(outFile, "w") as f:
             json.dump(d, f, sort_keys=True, indent=4)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset-folder",
-                        dest="cityscapesPath",
-                        help="path to the Cityscapes dataset 'gtFine' folder",
-                        default=None,
-                        type=str)
-    parser.add_argument("--output-folder",
-                        dest="outputFolder",
-                        help="path to the output folder.",
-                        default=None,
-                        type=str)
+    parser.add_argument(
+        "--dataset-folder",
+        dest="cityscapesPath",
+        help="path to the Cityscapes dataset 'gtFine' folder",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "--output-folder",
+        dest="outputFolder",
+        help="path to the output folder.",
+        default=None,
+        type=str,
+    )
     parser.add_argument("--use-train-id", action="store_true", dest="useTrainId")
     args = parser.parse_args()
 

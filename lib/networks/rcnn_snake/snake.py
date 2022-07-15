@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class CircConv(nn.Module):
@@ -8,10 +8,10 @@ class CircConv(nn.Module):
 
         self.n_adj = n_adj
         out_state_dim = state_dim if out_state_dim is None else out_state_dim
-        self.fc = nn.Conv1d(state_dim, out_state_dim, kernel_size=self.n_adj*2+1)
+        self.fc = nn.Conv1d(state_dim, out_state_dim, kernel_size=self.n_adj * 2 + 1)
 
     def forward(self, input, adj):
-        input = torch.cat([input[..., -self.n_adj:], input, input[..., :self.n_adj]], dim=2)
+        input = torch.cat([input[..., -self.n_adj :], input, input[..., : self.n_adj]], dim=2)
         return self.fc(input)
 
 
@@ -22,18 +22,24 @@ class DilatedCircConv(nn.Module):
         self.n_adj = n_adj
         self.dilation = dilation
         out_state_dim = state_dim if out_state_dim is None else out_state_dim
-        self.fc = nn.Conv1d(state_dim, out_state_dim, kernel_size=self.n_adj*2+1, dilation=self.dilation)
+        self.fc = nn.Conv1d(
+            state_dim, out_state_dim, kernel_size=self.n_adj * 2 + 1, dilation=self.dilation
+        )
 
     def forward(self, input, adj):
         if self.n_adj != 0:
-            input = torch.cat([input[..., -self.n_adj*self.dilation:], input, input[..., :self.n_adj*self.dilation]], dim=2)
+            input = torch.cat(
+                [
+                    input[..., -self.n_adj * self.dilation :],
+                    input,
+                    input[..., : self.n_adj * self.dilation],
+                ],
+                dim=2,
+            )
         return self.fc(input)
 
 
-_conv_factory = {
-    'grid': CircConv,
-    'dgrid': DilatedCircConv
-}
+_conv_factory = {"grid": CircConv, "dgrid": DilatedCircConv}
 
 
 class BasicBlock(nn.Module):
@@ -52,7 +58,7 @@ class BasicBlock(nn.Module):
 
 
 class Snake(nn.Module):
-    def __init__(self, state_dim, feature_dim, conv_type='dgrid'):
+    def __init__(self, state_dim, feature_dim, conv_type="dgrid"):
         super(Snake, self).__init__()
 
         self.head = BasicBlock(feature_dim, state_dim, conv_type)
@@ -61,7 +67,7 @@ class Snake(nn.Module):
         dilation = [1, 1, 1, 2, 2, 4, 4]
         for i in range(self.res_layer_num):
             conv = BasicBlock(state_dim, state_dim, conv_type, n_adj=4, dilation=dilation[i])
-            self.__setattr__('res'+str(i), conv)
+            self.__setattr__("res" + str(i), conv)
 
         fusion_state_dim = 256
         self.fusion = nn.Conv1d(state_dim * (self.res_layer_num + 1), fusion_state_dim, 1)
@@ -70,7 +76,7 @@ class Snake(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv1d(256, 64, 1),
             nn.ReLU(inplace=True),
-            nn.Conv1d(64, 2, 1)
+            nn.Conv1d(64, 2, 1),
         )
 
     def forward(self, x, adj):
@@ -79,12 +85,14 @@ class Snake(nn.Module):
         x = self.head(x, adj)
         states.append(x)
         for i in range(self.res_layer_num):
-            x = self.__getattr__('res'+str(i))(x, adj) + x
+            x = self.__getattr__("res" + str(i))(x, adj) + x
             states.append(x)
 
         state = torch.cat(states, dim=1)
         global_state = torch.max(self.fusion(state), dim=2, keepdim=True)[0]
-        global_state = global_state.expand(global_state.size(0), global_state.size(1), state.size(2))
+        global_state = global_state.expand(
+            global_state.size(0), global_state.size(1), state.size(2)
+        )
         state = torch.cat([global_state, state], dim=1)
         x = self.prediction(state)
 

@@ -1,6 +1,5 @@
-from lib.utils.snake.snake_config import *
 from lib.config import cfg
-
+from lib.utils.snake.snake_config import *
 
 cp_h, cp_w = 14, 56
 roi_h, roi_w = 7, 28
@@ -14,5 +13,4 @@ max_cp_det = 50
 max_cp_overlap = 0.1
 cp_score = 0.25
 
-segm_or_bbox = 'segm'
-
+segm_or_bbox = "segm"

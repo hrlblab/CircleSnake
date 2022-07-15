@@ -1,54 +1,84 @@
 import glob
-import os
 import json
-import numpy as np
-from lib.utils import data_utils
-import cv2
-from lib.utils.snake import snake_config
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import polygonize
-from scipy import ndimage
 import math
+import os
+
+import cv2
+import numpy as np
+from scipy import ndimage
+from shapely.geometry import MultiPolygon, Polygon
+from shapely.ops import polygonize
+
+from lib.utils import data_utils
+from lib.utils.snake import snake_config
 
 # Globals ----------------------------------------------------------------------
-COCO_LABELS = {24: 1,
-               26: 2,
-               27: 3,
-               25: 4,
-               33: 5,
-               32: 6,
-               28: 7,
-               31: 8}
+COCO_LABELS = {24: 1, 26: 2, 27: 3, 25: 4, 33: 5, 32: 6, 28: 7, 31: 8}
 
 # Label number to name and color
-INSTANCE_LABELS = {26: {'name': 'car', 'color': [0, 0, 142]},
-                   24: {'name': 'person', 'color': [220, 20, 60]},
-                   25: {'name': 'rider', 'color': [255, 0, 0]},
-                   32: {'name': 'motorcycle', 'color': [0, 0, 230]},
-                   33: {'name': 'bicycle', 'color': [119, 11, 32]},
-                   27: {'name': 'truck', 'color': [0, 0, 70]},
-                   28: {'name': 'bus', 'color': [0, 60, 100]},
-                   31: {'name': 'train', 'color': [0, 80, 100]}}
+INSTANCE_LABELS = {
+    26: {"name": "car", "color": [0, 0, 142]},
+    24: {"name": "person", "color": [220, 20, 60]},
+    25: {"name": "rider", "color": [255, 0, 0]},
+    32: {"name": "motorcycle", "color": [0, 0, 230]},
+    33: {"name": "bicycle", "color": [119, 11, 32]},
+    27: {"name": "truck", "color": [0, 0, 70]},
+    28: {"name": "bus", "color": [0, 60, 100]},
+    31: {"name": "train", "color": [0, 80, 100]},
+}
 
 # Label name to number
-LABEL_DICT = {'car': 26, 'person': 24, 'rider': 25, 'motorcycle': 32,
-              'bicycle': 33, 'truck': 27, 'bus': 28, 'train': 31}
+LABEL_DICT = {
+    "car": 26,
+    "person": 24,
+    "rider": 25,
+    "motorcycle": 32,
+    "bicycle": 33,
+    "truck": 27,
+    "bus": 28,
+    "train": 31,
+}
 # LABEL_DICT = {'bicycle': 33}
 
 # Label name to contiguous number
 JSON_DICT = dict(car=0, person=1, rider=2, motorcycle=3, bicycle=4, truck=5, bus=6, train=7)
 # JSON_DICT = dict(bicycle=0)
 # Contiguous number to name
-NUMBER_DICT = {0: 'car', 1: 'person', 2: 'rider', 3: 'motorcycle',
-               4: 'bicycle', 5: 'truck', 6: 'bus', 7: 'train'}
+NUMBER_DICT = {
+    0: "car",
+    1: "person",
+    2: "rider",
+    3: "motorcycle",
+    4: "bicycle",
+    5: "truck",
+    6: "bus",
+    7: "train",
+}
 # NUMBER_DICT = {0:'bicycle'}
 # Array of keys
-KEYS = np.array([[26000, 26999], [24000, 24999], [25000, 25999],
-                 [32000, 32999], [33000, 33999], [27000, 27999],
-                 [28000, 28999], [31000, 31999]])
+KEYS = np.array(
+    [
+        [26000, 26999],
+        [24000, 24999],
+        [25000, 25999],
+        [32000, 32999],
+        [33000, 33999],
+        [27000, 27999],
+        [28000, 28999],
+        [31000, 31999],
+    ]
+)
 
-NUM_CLASS = {'person': 17914, 'rider': 1755, 'car': 26944, 'truck': 482,
-             'bus': 379, 'train': 168, 'motorcycle': 735, 'bicycle': 3658}
+NUM_CLASS = {
+    "person": 17914,
+    "rider": 1755,
+    "car": 26944,
+    "truck": 482,
+    "bus": 379,
+    "train": 168,
+    "motorcycle": 735,
+    "bicycle": 3658,
+}
 
 
 # ------------------------------------------------------------------------------
@@ -64,15 +94,15 @@ def read_dataset(ann_files):
 
     ann_file = []
     for ann_file_dir in ann_files:
-        ann_file += glob.glob(os.path.join(ann_file_dir, '*/*.json'))
+        ann_file += glob.glob(os.path.join(ann_file_dir, "*/*.json"))
 
     ann_filter = []
     for fname in ann_file:
-        with open(fname, 'r') as f:
+        with open(fname, "r") as f:
             ann = json.load(f)
             examples = []
             for instance in ann:
-                instance_label = instance['label']
+                instance_label = instance["label"]
                 if instance_label not in LABEL_DICT:
                     continue
                 examples.append(instance)
@@ -82,19 +112,19 @@ def read_dataset(ann_files):
 
 
 def process_info(fname, data_root):
-    with open(fname, 'r') as f:
+    with open(fname, "r") as f:
         ann = json.load(f)
 
     examples = []
 
     for instance in ann:
-        instance_label = instance['label']
+        instance_label = instance["label"]
         if instance_label not in LABEL_DICT:
             continue
         examples.append(instance)
 
-    img_path = os.path.join(data_root, '/'.join(ann[0]['img_path'].split('/')[-3:]))
-    img_id = ann[0]['image_id']
+    img_path = os.path.join(data_root, "/".join(ann[0]["img_path"].split("/")[-3:]))
+    img_id = ann[0]["image_id"]
 
     return examples, img_path, img_id
 
@@ -115,18 +145,18 @@ def xywh_to_xyxy(boxes):
 def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = snake_config.scale
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.uniform(0.4, 1.6)
         seed = np.random.randint(0, len(polys))
         index = np.random.randint(0, len(polys[seed]))
-        poly = polys[seed][index]['poly']
+        poly = polys[seed][index]["poly"]
         center[0], center[1] = poly[np.random.randint(len(poly))]
         border = scale[0] // 2 if scale[0] < width else width - scale[0] // 2
         center[0] = np.clip(center[0], a_min=border, a_max=width - border)
@@ -140,7 +170,7 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
             center[0] = width - center[0] - 1
 
     input_w, input_h = snake_config.input_w, snake_config.input_h
-    if split != 'train':
+    if split != "train":
         center = np.array([width // 2, height // 2])
         scale = np.array([width, height])
         # input_w, input_h = width, height
@@ -151,8 +181,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         data_utils.color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # data_utils.blur_aug(inp)
 
@@ -182,25 +212,27 @@ def handle_break_point(poly, axis, number, outside_border):
         return []
 
     break_points = np.argwhere(
-        outside_border(poly[:-1, axis], number) != outside_border(poly[1:, axis], number)).ravel()
+        outside_border(poly[:-1, axis], number) != outside_border(poly[1:, axis], number)
+    ).ravel()
     if len(break_points) == 0:
         return poly
 
     new_poly = []
     if not outside_border(poly[break_points[0], axis], number):
-        new_poly.append(poly[:break_points[0]])
+        new_poly.append(poly[: break_points[0]])
 
     for i in range(len(break_points)):
         current_poly = poly[break_points[i]]
         next_poly = poly[break_points[i] + 1]
         mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (
-                    next_poly[axis] - current_poly[axis])
+            next_poly[axis] - current_poly[axis]
+        )
 
         if outside_border(poly[break_points[i], axis], number):
             if mid_poly[axis] != next_poly[axis]:
                 new_poly.append([mid_poly])
             next_point = len(poly) if i == (len(break_points) - 1) else break_points[i + 1]
-            new_poly.append(poly[break_points[i] + 1:next_point])
+            new_poly.append(poly[break_points[i] + 1 : next_point])
         else:
             new_poly.append([poly[break_points[i]]])
             if mid_poly[axis] != current_poly[axis]:
@@ -210,7 +242,8 @@ def handle_break_point(poly, axis, number, outside_border):
         current_poly = poly[-1]
         next_poly = poly[0]
         mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (
-                    next_poly[axis] - current_poly[axis])
+            next_poly[axis] - current_poly[axis]
+        )
         new_poly.append([mid_poly])
 
     return np.concatenate(new_poly)
@@ -293,9 +326,12 @@ def get_valid_polys(polys):
 
     relation = np.any(relation, axis=1)
     shape_polys = [shape_polys[i] for i, shape_poly in enumerate(shape_polys) if not relation[i]]
-    polys = [np.array(shape_poly.exterior.coords)[::-1]
-             if shape_poly.exterior.is_ccw else np.array(shape_poly.exterior.coords)
-             for shape_poly in shape_polys]
+    polys = [
+        np.array(shape_poly.exterior.coords)[::-1]
+        if shape_poly.exterior.is_ccw
+        else np.array(shape_poly.exterior.coords)
+        for shape_poly in shape_polys
+    ]
     return polys
 
 
@@ -417,10 +453,10 @@ def get_extreme_points(pts):
 def get_quadrangle(box):
     x_min, y_min, x_max, y_max = box
     quadrangle = [
-        [(x_min + x_max) / 2., y_min],
-        [x_min, (y_min + y_max) / 2.],
-        [(x_min + x_max) / 2., y_max],
-        [x_max, (y_min + y_max) / 2.]
+        [(x_min + x_max) / 2.0, y_min],
+        [x_min, (y_min + y_max) / 2.0],
+        [(x_min + x_max) / 2.0, y_max],
+        [x_max, (y_min + y_max) / 2.0],
     ]
     return np.array(quadrangle)
 
@@ -428,20 +464,20 @@ def get_quadrangle(box):
 def get_box(box):
     x_min, y_min, x_max, y_max = box
     box = [
-        [(x_min + x_max) / 2., y_min],
+        [(x_min + x_max) / 2.0, y_min],
         [x_min, y_min],
-        [x_min, (y_min + y_max) / 2.],
+        [x_min, (y_min + y_max) / 2.0],
         [x_min, y_max],
-        [(x_min + x_max) / 2., y_max],
+        [(x_min + x_max) / 2.0, y_max],
         [x_max, y_max],
-        [x_max, (y_min + y_max) / 2.],
-        [x_max, y_min]
+        [x_max, (y_min + y_max) / 2.0],
+        [x_max, y_min],
     ]
     return np.array(box)
 
 
 def get_init(box):
-    if snake_config.init == 'quadrangle':
+    if snake_config.init == "quadrangle":
         return get_quadrangle(box)
     else:
         return get_box(box)
@@ -452,18 +488,30 @@ def get_octagon(ex):
     t, l, b, r = ex[0][1], ex[1][0], ex[2][1], ex[3][0]
     x = 8.0
     octagon = [
-        ex[0][0], ex[0][1],
-        max(ex[0][0] - w / x, l), ex[0][1],
-        ex[1][0], max(ex[1][1] - h / x, t),
-        ex[1][0], ex[1][1],
-        ex[1][0], min(ex[1][1] + h / x, b),
-        max(ex[2][0] - w / x, l), ex[2][1],
-        ex[2][0], ex[2][1],
-        min(ex[2][0] + w / x, r), ex[2][1],
-        ex[3][0], min(ex[3][1] + h / x, b),
-        ex[3][0], ex[3][1],
-        ex[3][0], max(ex[3][1] - h / x, t),
-        min(ex[0][0] + w / x, r), ex[0][1],
+        ex[0][0],
+        ex[0][1],
+        max(ex[0][0] - w / x, l),
+        ex[0][1],
+        ex[1][0],
+        max(ex[1][1] - h / x, t),
+        ex[1][0],
+        ex[1][1],
+        ex[1][0],
+        min(ex[1][1] + h / x, b),
+        max(ex[2][0] - w / x, l),
+        ex[2][1],
+        ex[2][0],
+        ex[2][1],
+        min(ex[2][0] + w / x, r),
+        ex[2][1],
+        ex[3][0],
+        min(ex[3][1] + h / x, b),
+        ex[3][0],
+        ex[3][1],
+        ex[3][0],
+        max(ex[3][1] - h / x, t),
+        min(ex[0][0] + w / x, r),
+        ex[0][1],
     ]
     return np.array(octagon).reshape(-1, 2)
 
@@ -476,7 +524,7 @@ def get_ellipse(box, cp_num):
         y = -np.sin(theta)
         pointsnp[i, 0] = x
         pointsnp[i, 1] = y
-    pointsnp /= 2.
+    pointsnp /= 2.0
     pointsnp += 0.5
     w, h = box[2] - box[0], box[3] - box[1]
     pointsnp *= np.array([w, h])
@@ -489,7 +537,7 @@ def uniform_sample_init(poly):
     ind = np.array(list(range(0, len(poly), len(poly) // 4)))
     next_ind = np.roll(ind, shift=-1)
     for i in range(len(ind)):
-        poly_ = poly[ind[i]:ind[i] + len(poly) // 4]
+        poly_ = poly[ind[i] : ind[i] + len(poly) // 4]
         poly_ = np.append(poly_, [poly[next_ind[i]]], axis=0)
         poly_ = uniform_sample_segment(poly_, snake_config.init_poly_num // 4)
         polys.append(poly_)
@@ -509,7 +557,7 @@ def uniformsample(pgtnp_px2, newpnum):
     # we need to remove gt points
     # we simply remove shortest paths
     if pnum > newpnum:
-        edgeidxkeep_k = edgeidxsort_p[pnum - newpnum:]
+        edgeidxkeep_k = edgeidxsort_p[pnum - newpnum :]
         edgeidxsort_k = np.sort(edgeidxkeep_k)
         pgtnp_kx2 = pgtnp_px2[edgeidxsort_k]
         assert pgtnp_kx2.shape[0] == newpnum
@@ -548,8 +596,8 @@ def uniformsample(pgtnp_px2, newpnum):
 
         psample = []
         for i in range(pnum):
-            pb_1x2 = pgtnp_px2[i:i + 1]
-            pe_1x2 = pgtnext_px2[i:i + 1]
+            pb_1x2 = pgtnp_px2[i : i + 1]
+            pe_1x2 = pgtnext_px2[i : i + 1]
 
             pnewnum = edgenum[i]
             wnp_kx1 = np.arange(edgenum[i], dtype=np.float32).reshape(-1, 1) / edgenum[i]
@@ -567,7 +615,9 @@ def uniformsample_circle(gt_circle, newpnum):
     # angles = np.linspace(np.pi / 2.0, - np.pi * (3.0 / 2.0), newpnum + 1, endpoint=True)[:newpnum]
     # angles = np.linspace(- np.pi * (3.0 / 2.0), np.pi / 2.0, newpnum + 1, endpoint=True)[:newpnum]
 
-    angles = np.linspace(np.pi * (3.0 / 2.0), - np.pi * (1.0 / 2.0), newpnum + 1, endpoint=True)[:newpnum]
+    angles = np.linspace(np.pi * (3.0 / 2.0), -np.pi * (1.0 / 2.0), newpnum + 1, endpoint=True)[
+        :newpnum
+    ]
 
     for angle in angles:
         x = gt_circle["circle_radius"] * np.cos(angle) + gt_circle["circle_center"][0]
@@ -621,8 +671,8 @@ def uniform_sample_segment(pgtnp_px2, newpnum):
 
     psample = []
     for i in range(pnum):
-        pb_1x2 = pgtnp_px2[i:i + 1]
-        pe_1x2 = pgtnext_px2[i:i + 1]
+        pb_1x2 = pgtnp_px2[i : i + 1]
+        pe_1x2 = pgtnext_px2[i : i + 1]
 
         pnewnum = edgenum[i]
         wnp_kx1 = np.arange(edgenum[i], dtype=np.float32).reshape(-1, 1) / edgenum[i]

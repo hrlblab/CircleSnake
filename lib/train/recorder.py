@@ -1,7 +1,8 @@
-from collections import deque, defaultdict
+import os
+from collections import defaultdict, deque
+
 import torch
 from tensorboardX import SummaryWriter
-import os
 
 
 class SmoothedValue(object):
@@ -38,7 +39,7 @@ class Recorder(object):
     def __init__(self, cfg):
         log_dir = cfg.record_dir
         if not cfg.resume:
-            os.system('rm -rf {}'.format(log_dir))
+            os.system("rm -rf {}".format(log_dir))
         self.writer = SummaryWriter(log_dir=log_dir)
 
         # scalars
@@ -50,8 +51,8 @@ class Recorder(object):
 
         # images
         self.image_stats = defaultdict(object)
-        if 'process_'+cfg.task in globals():
-            self.processor = globals()['process_'+cfg.task]
+        if "process_" + cfg.task in globals():
+            self.processor = globals()["process_" + cfg.task]
         else:
             self.processor = None
 
@@ -67,7 +68,7 @@ class Recorder(object):
             self.image_stats[k] = v.detach().cpu()
 
     def record(self, prefix, step=-1, loss_stats=None, image_stats=None):
-        pattern = prefix + '/{}'
+        pattern = prefix + "/{}"
         step = step if step >= 0 else self.step
         loss_stats = loss_stats if loss_stats else self.loss_stats
 
@@ -85,22 +86,25 @@ class Recorder(object):
 
     def state_dict(self):
         scalar_dict = {}
-        scalar_dict['step'] = self.step
+        scalar_dict["step"] = self.step
         return scalar_dict
 
     def load_state_dict(self, scalar_dict):
-        self.step = scalar_dict['step']
+        self.step = scalar_dict["step"]
 
     def __str__(self):
         loss_state = []
         for k, v in self.loss_stats.items():
-            loss_state.append('{}: {:.4f}'.format(k, v.avg))
-        loss_state = '  '.join(loss_state)
+            loss_state.append("{}: {:.4f}".format(k, v.avg))
+        loss_state = "  ".join(loss_state)
 
-        recording_state = '  '.join(['epoch: {}', 'step: {}', '{}', 'data: {:.4f}', 'batch: {:.4f}'])
-        return recording_state.format(self.epoch, self.step, loss_state, self.data_time.avg, self.batch_time.avg)
+        recording_state = "  ".join(
+            ["epoch: {}", "step: {}", "{}", "data: {:.4f}", "batch: {:.4f}"]
+        )
+        return recording_state.format(
+            self.epoch, self.step, loss_state, self.data_time.avg, self.batch_time.avg
+        )
 
 
 def make_recorder(cfg):
     return Recorder(cfg)
-

@@ -1,16 +1,17 @@
-import pickle
 import os
+import pickle
+
 import numpy as np
 
 
 def read_pickle(pkl_path):
-    with open(pkl_path, 'rb') as f:
+    with open(pkl_path, "rb") as f:
         return pickle.load(f)
 
 
 def save_pickle(data, pkl_path):
-    os.system('mkdir -p {}'.format(os.path.dirname(pkl_path)))
-    with open(pkl_path, 'wb') as f:
+    os.system("mkdir -p {}".format(os.path.dirname(pkl_path)))
+    with open(pkl_path, "wb") as f:
         pickle.dump(data, f)
 
 

@@ -1,13 +1,16 @@
-import torch.utils.data as data
-from lib.utils.snake import visualize_utils
+import math
+import os
+
 import cv2
 import numpy as np
-import math
-from lib.utils import data_utils
+import torch.utils.data as data
 from pycocotools.coco import COCO
-import os
-from lib.utils.snake import snake_cityscapes_coco_utils as snake_cityscapes_utils
+
+from lib.utils import data_utils
 from lib.utils.rcnn_snake import rcnn_snake_config as snake_config
+from lib.utils.snake import \
+    snake_cityscapes_coco_utils as snake_cityscapes_utils
+from lib.utils.snake import visualize_utils
 
 
 class Dataset(data.Dataset):
@@ -19,22 +22,27 @@ class Dataset(data.Dataset):
 
         self.coco = COCO(ann_file)
         self.anns = self.coco.getImgIds()[:]
-        self.anns = np.array([img_id for img_id in self.anns if len(self.coco.getAnnIds(imgIds=img_id)) > 0])
+        self.anns = np.array(
+            [img_id for img_id in self.anns if len(self.coco.getAnnIds(imgIds=img_id)) > 0]
+        )
         self.json_category_id_to_contiguous_id = {v: i for i, v in enumerate(self.coco.getCatIds())}
 
     def process_info(self, img_id):
         ann_ids = self.coco.getAnnIds(imgIds=img_id)
         anno = self.coco.loadAnns(ann_ids)
-        file_name = self.coco.loadImgs(int(img_id))[0]['file_name']
-        city = file_name.split('_')[0]
+        file_name = self.coco.loadImgs(int(img_id))[0]["file_name"]
+        city = file_name.split("_")[0]
         path = os.path.join(self.data_root, file_name)
         return anno, path, img_id
 
     def read_original_data(self, anno, path):
         img = cv2.imread(path)
-        instance_polys = [[np.array(poly).reshape(-1, 2) for poly in obj['segmentation']] for obj in anno
-                          if not isinstance(obj['segmentation'], dict)]
-        cls_ids = [self.json_category_id_to_contiguous_id[obj['category_id']] for obj in anno]
+        instance_polys = [
+            [np.array(poly).reshape(-1, 2) for poly in obj["segmentation"]]
+            for obj in anno
+            if not isinstance(obj["segmentation"], dict)
+        ]
+        cls_ids = [self.json_category_id_to_contiguous_id[obj["category_id"]] for obj in anno]
         return img, instance_polys, cls_ids
 
     def transform_original_data(self, instance_polys, flipped, width, trans_output, inp_out_hw):
@@ -105,7 +113,7 @@ class Dataset(data.Dataset):
         x_min, y_min, x_max, y_max = abox
         ct = np.round([(x_min + x_max) / 2, (y_min + y_max) / 2]).astype(np.int32)
         h, w = y_max - y_min, x_max - x_min
-        abox = np.array([ct[0] - w/2, ct[1] - h/2, ct[0] + w/2, ct[1] + h/2])
+        abox = np.array([ct[0] - w / 2, ct[1] - h / 2, ct[0] + w / 2, ct[1] + h / 2])
 
         hm = np.zeros([1, snake_config.cp_h, snake_config.cp_w], dtype=np.float32)
         abox_w, abox_h = abox[2] - abox[0], abox[3] - abox[1]
@@ -131,7 +139,9 @@ class Dataset(data.Dataset):
             radius = max(0, int(radius))
             data_utils.draw_umich_gaussian(hm[0], ro_center, radius)
 
-            center = ro_center / [snake_config.cp_w, snake_config.cp_h] * [abox_w, abox_h] + abox[:2]
+            center = (
+                ro_center / [snake_config.cp_w, snake_config.cp_h] * [abox_w, abox_h] + abox[:2]
+            )
             x_min, y_min = center[0] - box_w / 2, center[1] - box_h / 2
             x_max, y_max = center[0] + box_w / 2, center[1] + box_h / 2
             decode_boxes.append([x_min, y_min, x_max, y_max])
@@ -152,29 +162,41 @@ class Dataset(data.Dataset):
             box = [x_min + x_shift, y_min + y_shift, x_max + x_shift, y_max + y_shift]
 
         img_init_poly = snake_cityscapes_utils.get_init(box)
-        img_init_poly = snake_cityscapes_utils.uniformsample(img_init_poly, snake_config.init_poly_num)
-        can_init_poly = snake_cityscapes_utils.img_poly_to_can_poly(img_init_poly, x_min, y_min, x_max, y_max)
+        img_init_poly = snake_cityscapes_utils.uniformsample(
+            img_init_poly, snake_config.init_poly_num
+        )
+        can_init_poly = snake_cityscapes_utils.img_poly_to_can_poly(
+            img_init_poly, x_min, y_min, x_max, y_max
+        )
         img_gt_poly = extreme_point
-        can_gt_poly = snake_cityscapes_utils.img_poly_to_can_poly(img_gt_poly, x_min, y_min, x_max, y_max)
+        can_gt_poly = snake_cityscapes_utils.img_poly_to_can_poly(
+            img_gt_poly, x_min, y_min, x_max, y_max
+        )
 
         i_it_4pys.append(img_init_poly)
         c_it_4pys.append(can_init_poly)
         i_gt_4pys.append(img_gt_poly)
         c_gt_4pys.append(can_gt_poly)
 
-    def prepare_evolution(self, poly, extreme_point, img_init_polys, can_init_polys, img_gt_polys, can_gt_polys):
+    def prepare_evolution(
+        self, poly, extreme_point, img_init_polys, can_init_polys, img_gt_polys, can_gt_polys
+    ):
         x_min, y_min = np.min(extreme_point[:, 0]), np.min(extreme_point[:, 1])
         x_max, y_max = np.max(extreme_point[:, 0]), np.max(extreme_point[:, 1])
 
         octagon = snake_cityscapes_utils.get_octagon(extreme_point)
         img_init_poly = snake_cityscapes_utils.uniformsample(octagon, snake_config.poly_num)
-        can_init_poly = snake_cityscapes_utils.img_poly_to_can_poly(img_init_poly, x_min, y_min, x_max, y_max)
+        can_init_poly = snake_cityscapes_utils.img_poly_to_can_poly(
+            img_init_poly, x_min, y_min, x_max, y_max
+        )
 
         spline_poly_num = snake_config.gt_poly_num * snake_config.spline_num
         img_gt_poly = snake_cityscapes_utils.uniformsample(poly, spline_poly_num)
         tt_idx = np.argmin(np.power(img_gt_poly - img_init_poly[0], 2).sum(axis=1))
-        img_gt_poly = np.roll(img_gt_poly, -tt_idx, axis=0)[::snake_config.spline_num]
-        can_gt_poly = snake_cityscapes_utils.img_poly_to_can_poly(img_gt_poly, x_min, y_min, x_max, y_max)
+        img_gt_poly = np.roll(img_gt_poly, -tt_idx, axis=0)[:: snake_config.spline_num]
+        can_gt_poly = snake_cityscapes_utils.img_poly_to_can_poly(
+            img_gt_poly, x_min, y_min, x_max, y_max
+        )
 
         img_init_polys.append(img_init_poly)
         can_init_polys.append(can_init_poly)
@@ -188,13 +210,28 @@ class Dataset(data.Dataset):
         img, instance_polys, cls_ids = self.read_original_data(anno, path)
 
         height, width = img.shape[0], img.shape[1]
-        orig_img, inp, trans_input, trans_output, flipped, center, scale, inp_out_hw = \
-            snake_cityscapes_utils.augment(
-                img, self.split,
-                snake_config.data_rng, snake_config.eig_val, snake_config.eig_vec,
-                snake_config.mean, snake_config.std, instance_polys
-            )
-        instance_polys = self.transform_original_data(instance_polys, flipped, width, trans_output, inp_out_hw)
+        (
+            orig_img,
+            inp,
+            trans_input,
+            trans_output,
+            flipped,
+            center,
+            scale,
+            inp_out_hw,
+        ) = snake_cityscapes_utils.augment(
+            img,
+            self.split,
+            snake_config.data_rng,
+            snake_config.eig_val,
+            snake_config.eig_vec,
+            snake_config.mean,
+            snake_config.std,
+            instance_polys,
+        )
+        instance_polys = self.transform_original_data(
+            instance_polys, flipped, width, trans_output, inp_out_hw
+        )
         instance_polys = self.get_valid_polys(instance_polys)
         extreme_points = self.get_extreme_points(instance_polys)
         boxes = self.get_amodal_boxes(extreme_points)
@@ -241,14 +278,33 @@ class Dataset(data.Dataset):
                 if h <= 1 or w <= 1:
                     continue
 
-                self.prepare_init(decode_boxes[j], extreme_point, i_it_4pys, c_it_4pys, i_gt_4pys, c_gt_4pys, output_h, output_w)
+                self.prepare_init(
+                    decode_boxes[j],
+                    extreme_point,
+                    i_it_4pys,
+                    c_it_4pys,
+                    i_gt_4pys,
+                    c_gt_4pys,
+                    output_h,
+                    output_w,
+                )
                 self.prepare_evolution(poly, extreme_point, i_it_pys, c_it_pys, i_gt_pys, c_gt_pys)
 
-        ret = {'inp': inp}
-        adet = {'act_hm': act_hm, 'awh': awh, 'act_ind': act_ind}
-        cp = {'cp_hm': cp_hm, 'cp_wh': cp_wh, 'cp_ind': cp_ind}
-        init = {'i_it_4py': i_it_4pys, 'c_it_4py': c_it_4pys, 'i_gt_4py': i_gt_4pys, 'c_gt_4py': c_gt_4pys}
-        evolution = {'i_it_py': i_it_pys, 'c_it_py': c_it_pys, 'i_gt_py': i_gt_pys, 'c_gt_py': c_gt_pys}
+        ret = {"inp": inp}
+        adet = {"act_hm": act_hm, "awh": awh, "act_ind": act_ind}
+        cp = {"cp_hm": cp_hm, "cp_wh": cp_wh, "cp_ind": cp_ind}
+        init = {
+            "i_it_4py": i_it_4pys,
+            "c_it_4py": c_it_4pys,
+            "i_gt_4py": i_gt_4pys,
+            "c_gt_4py": c_gt_4pys,
+        }
+        evolution = {
+            "i_it_py": i_it_pys,
+            "c_it_py": c_it_pys,
+            "i_gt_py": i_gt_pys,
+            "c_gt_py": c_gt_pys,
+        }
         ret.update(adet)
         ret.update(cp)
         ret.update(init)
@@ -259,11 +315,17 @@ class Dataset(data.Dataset):
 
         act_num = len(act_ind)
         ct_num = len(i_gt_pys)
-        meta = {'center': center, 'scale': scale, 'img_id': img_id, 'ann': ann, 'act_num': act_num, 'ct_num': ct_num}
-        ret.update({'meta': meta})
+        meta = {
+            "center": center,
+            "scale": scale,
+            "img_id": img_id,
+            "ann": ann,
+            "act_num": act_num,
+            "ct_num": ct_num,
+        }
+        ret.update({"meta": meta})
 
         return ret
 
     def __len__(self):
         return len(self.anns)
-

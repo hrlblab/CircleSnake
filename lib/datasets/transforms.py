@@ -21,7 +21,7 @@ class Compose(object):
 
 class ToTensor(object):
     def __call__(self, img, kpts):
-        return img / 255., kpts
+        return img / 255.0, kpts
 
 
 class Normalize(object):

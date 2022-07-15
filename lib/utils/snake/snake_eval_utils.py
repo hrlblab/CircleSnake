@@ -1,8 +1,9 @@
-import numpy as np
+import os
+
 import cv2
+import numpy as np
 import pycocotools.mask as mask_utils
 from PIL import Image
-import os
 
 
 def poly_to_mask(poly, label, h, w):
@@ -50,7 +51,7 @@ def coco_poly_to_rle(poly, h, w):
     for i in range(len(poly)):
         rles = mask_utils.frPyObjects([poly[i].reshape(-1)], h, w)
         rle = mask_utils.merge(rles)
-        rle['counts'] = rle['counts'].decode('utf-8')
+        rle["counts"] = rle["counts"].decode("utf-8")
         rle_.append(rle)
     return rle_
 
@@ -61,7 +62,6 @@ def rcnn_coco_poly_to_rle(poly, ind_group, h, w):
         poly_ = [poly[ind].reshape(-1) for ind in ind_group[i]]
         rles = mask_utils.frPyObjects(poly_, h, w)
         rle = mask_utils.merge(rles)
-        rle['counts'] = rle['counts'].decode('utf-8')
+        rle["counts"] = rle["counts"].decode("utf-8")
         rle_.append(rle)
     return rle_
-

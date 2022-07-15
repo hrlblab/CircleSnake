@@ -4,14 +4,17 @@
 #
 
 # Python imports
-from __future__ import print_function, absolute_import, division
-import os, sys, getopt
+from __future__ import absolute_import, division, print_function
+
+import getopt
 import glob
-import math
 import json
-from collections import namedtuple
 import logging
+import math
+import os
+import sys
 import traceback
+from collections import namedtuple
 
 # Image processing
 # Check if PIL is actually Pillow as expected
@@ -23,7 +26,7 @@ except:
     sys.exit(-1)
 
 try:
-    import PIL.Image     as Image
+    import PIL.Image as Image
     import PIL.ImageDraw as ImageDraw
 except:
     print("Failed to import the image processing packages.")
@@ -39,7 +42,10 @@ except:
 # Cityscapes modules
 try:
     from external.cityscapesscripts.helpers.annotation import Annotation
-    from external.cityscapesscripts.helpers.labels import labels, name2label, id2label, trainId2label, category2labels
+    from external.cityscapesscripts.helpers.labels import (category2labels,
+                                                           id2label, labels,
+                                                           name2label,
+                                                           trainId2label)
 except ImportError as err:
     print("Failed to import all Cityscapes modules: %s" % err)
     sys.exit(-1)
@@ -54,21 +60,21 @@ except:
 
 # Print an error message and quit
 def printError(message):
-    print('ERROR: ' + str(message))
+    print("ERROR: " + str(message))
     sys.exit(-1)
 
 
 # Class for colors
 class colors:
-    RED = '\033[31;1m'
-    GREEN = '\033[32;1m'
-    YELLOW = '\033[33;1m'
-    BLUE = '\033[34;1m'
-    MAGENTA = '\033[35;1m'
-    CYAN = '\033[36;1m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-    ENDC = '\033[0m'
+    RED = "\033[31;1m"
+    GREEN = "\033[32;1m"
+    YELLOW = "\033[33;1m"
+    BLUE = "\033[34;1m"
+    MAGENTA = "\033[35;1m"
+    CYAN = "\033[36;1m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+    ENDC = "\033[0m"
 
 
 # Colored value output if colorized flag is activated.
@@ -77,13 +83,13 @@ def getColorEntry(val, args):
         return ""
     if not isinstance(val, float) or math.isnan(val):
         return colors.ENDC
-    if (val < .20):
+    if val < 0.20:
         return colors.RED
-    elif (val < .40):
+    elif val < 0.40:
         return colors.YELLOW
-    elif (val < .60):
+    elif val < 0.60:
         return colors.BLUE
-    elif (val < .80):
+    elif val < 0.80:
         return colors.CYAN
     else:
         return colors.GREEN
@@ -93,22 +99,28 @@ def getColorEntry(val, args):
 # <city>_<sequenceNb>_<frameNb>_<type>[_<type2>].<ext>
 # This class contains the individual elements as members
 # For the sequence and frame number, the strings are returned, including leading zeros
-CsFile = namedtuple('csFile', ['city', 'sequenceNb', 'frameNb', 'type', 'type2', 'ext'])
+CsFile = namedtuple("csFile", ["city", "sequenceNb", "frameNb", "type", "type2", "ext"])
 
 
 # Returns a CsFile object filled from the info in the given filename
 def getCsFileInfo(fileName):
     baseName = os.path.basename(fileName)
-    parts = baseName.split('_')
-    parts = parts[:-1] + parts[-1].split('.')
+    parts = baseName.split("_")
+    parts = parts[:-1] + parts[-1].split(".")
     if not parts:
-        printError('Cannot parse given filename ({}). Does not seem to be a valid Cityscapes file.'.format(fileName))
+        printError(
+            "Cannot parse given filename ({}). Does not seem to be a valid Cityscapes file.".format(
+                fileName
+            )
+        )
     if len(parts) == 5:
         csFile = CsFile(*parts[:-1], type2="", ext=parts[-1])
     elif len(parts) == 6:
         csFile = CsFile(*parts)
     else:
-        printError('Found {} part(s) in given filename ({}). Expected 5 or 6.'.format(len(parts), fileName))
+        printError(
+            "Found {} part(s) in given filename ({}). Expected 5 or 6.".format(len(parts), fileName)
+        )
 
     return csFile
 
@@ -139,7 +151,7 @@ def ensurePath(path):
 
 # Write a dictionary as json file
 def writeDict2JSON(dictName, fileName):
-    with open(fileName, 'w') as f:
+    with open(fileName, "w") as f:
         f.write(json.dumps(dictName, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
 

@@ -1,2 +1,1 @@
 from .snake import Dataset
-

@@ -28,7 +28,6 @@ from ast import literal_eval
 
 import yaml
 
-
 # Flag for py2 and py3 compatibility to use when separate code paths are necessary
 # When _PY2 is False, we assume Python 3 is in use
 _PY2 = False
@@ -117,9 +116,7 @@ class CfgNode(dict):
     def __setattr__(self, name, value):
         if self.is_frozen():
             raise AttributeError(
-                "Attempted to set {} to {}, but CfgNode is immutable".format(
-                    name, value
-                )
+                "Attempted to set {} to {}, but CfgNode is immutable".format(name, value)
             )
 
         _assert_with_logging(
@@ -128,9 +125,7 @@ class CfgNode(dict):
         )
         _assert_with_logging(
             _valid_type(value, allow_cfg_node=True),
-            "Invalid type {} for key {}; valid types = {}".format(
-                type(value), name, _VALID_TYPES
-            ),
+            "Invalid type {} for key {}; valid types = {}".format(type(value), name, _VALID_TYPES),
         )
 
         self[name] = value
@@ -180,9 +175,7 @@ class CfgNode(dict):
         """
         _assert_with_logging(
             len(cfg_list) % 2 == 0,
-            "Override list has odd length: {}; it must be a list of pairs".format(
-                cfg_list
-            ),
+            "Override list has odd length: {}; it must be a list of pairs".format(cfg_list),
         )
         root = self
         for full_key, v in zip(cfg_list[0::2], cfg_list[1::2]):
@@ -193,9 +186,7 @@ class CfgNode(dict):
             key_list = full_key.split(".")
             d = self
             for subkey in key_list[:-1]:
-                _assert_with_logging(
-                    subkey in d, "Non-existent key: {}".format(full_key)
-                )
+                _assert_with_logging(subkey in d, "Non-existent key: {}".format(full_key))
                 d = d[subkey]
             subkey = key_list[-1]
             _assert_with_logging(subkey in d, "Non-existent key: {}".format(full_key))
@@ -275,18 +266,16 @@ class CfgNode(dict):
         else:
             msg = ""
         raise KeyError(
-            "Key {} was renamed to {}; please update your config.{}".format(
-                full_key, new_key, msg
-            )
+            "Key {} was renamed to {}; please update your config.{}".format(full_key, new_key, msg)
         )
 
 
 def load_cfg(cfg_file_obj_or_str):
     """Load a cfg. Supports loading from:
-        - A file object backed by a YAML file
-        - A file object backed by a Python source file that exports an attribute
-          "cfg" that is either a dict or a CfgNode
-        - A string that can be parsed as valid YAML
+    - A file object backed by a YAML file
+    - A file object backed by a Python source file that exports an attribute
+      "cfg" that is either a dict or a CfgNode
+    - A string that can be parsed as valid YAML
     """
     _assert_with_logging(
         isinstance(cfg_file_obj_or_str, _FILE_TYPES + (str,)),
@@ -474,9 +463,7 @@ def _check_and_coerce_cfg_value_type(replacement, original, key, full_key):
 
     raise ValueError(
         "Type mismatch ({} vs. {}) with values ({} vs. {}) for config "
-        "key: {}".format(
-            original_type, replacement_type, original, replacement, full_key
-        )
+        "key: {}".format(original_type, replacement_type, original, replacement, full_key)
     )
 
 

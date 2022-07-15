@@ -8,7 +8,7 @@
 #   a) *color.png             : the class is encoded by its color
 #   b) *labelIds.png          : the class is encoded by its ID
 #   c) *instanceIds.png       : the class and the instance are encoded by an instance ID
-# 
+#
 # With this tool, you can generate option
 #   d) *instanceTrainIds.png  : the class and the instance are encoded by an instance training ID
 # This encoding might come handy for training purposes. You can use
@@ -23,10 +23,13 @@
 #
 
 # python imports
-from __future__ import print_function, absolute_import, division
-import os, glob, sys
+from __future__ import absolute_import, division, print_function
 
-sys.path.append('.')
+import glob
+import os
+import sys
+
+sys.path.append(".")
 
 # cityscapes imports
 from cityscapesscripts.helpers.csHelpers import printError
@@ -36,19 +39,19 @@ from cityscapesscripts.preparation.json2instanceImg import json2instanceImg
 # The main method
 def main():
     # Where to look for Cityscapes
-    if 'CITYSCAPES_DATASET' in os.environ:
-        cityscapesPath = os.environ['CITYSCAPES_DATASET']
+    if "CITYSCAPES_DATASET" in os.environ:
+        cityscapesPath = os.environ["CITYSCAPES_DATASET"]
     else:
-        cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'..','..')
+        cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
     # how to search for all ground truth
-    cityscapesPath = '/home/pengsida/Datasets/cityscape'
-    searchFine   = os.path.join( cityscapesPath , "gtFine"   , "*" , "*" , "*_gt*_polygons.json" )
-    searchCoarse = os.path.join( cityscapesPath , "gtCoarse" , "*" , "*" , "*_gt*_polygons.json" )
+    cityscapesPath = "/home/pengsida/Datasets/cityscape"
+    searchFine = os.path.join(cityscapesPath, "gtFine", "*", "*", "*_gt*_polygons.json")
+    searchCoarse = os.path.join(cityscapesPath, "gtCoarse", "*", "*", "*_gt*_polygons.json")
 
     # search files
-    filesFine = glob.glob( searchFine )
+    filesFine = glob.glob(searchFine)
     filesFine.sort()
-    filesCoarse = glob.glob( searchCoarse )
+    filesCoarse = glob.glob(searchCoarse)
     filesCoarse.sort()
 
     # concatenate fine and coarse
@@ -57,29 +60,29 @@ def main():
 
     # quit if we did not find anything
     if not files:
-        printError( "Did not find any files. Please consult the README." )
+        printError("Did not find any files. Please consult the README.")
 
     # a bit verbose
     print("Processing {} annotation files".format(len(files)))
 
     # iterate through files
     progress = 0
-    print("Progress: {:>3} %".format( progress * 100 / len(files) ), end=' ')
+    print("Progress: {:>3} %".format(progress * 100 / len(files)), end=" ")
     for f in files:
-        f = '/home/pengsida/Datasets/cityscape/gtFine/val/frankfurt/frankfurt_000000_000294_gtFine_polygons.json'
+        f = "/home/pengsida/Datasets/cityscape/gtFine/val/frankfurt/frankfurt_000000_000294_gtFine_polygons.json"
         # create the output filename
-        dst = f.replace( "_polygons.json" , "_instanceTrainIds.png" )
+        dst = f.replace("_polygons.json", "_instanceTrainIds.png")
 
         # do the conversion
         try:
-            json2instanceImg( f , dst , "trainIds" )
+            json2instanceImg(f, dst, "trainIds")
         except:
             print("Failed to convert: {}".format(f))
             raise
 
         # status
         progress += 1
-        print("\rProgress: {:>3} %".format( progress * 100 / len(files) ), end=' ')
+        print("\rProgress: {:>3} %".format(progress * 100 / len(files)), end=" ")
         sys.stdout.flush()
 
 

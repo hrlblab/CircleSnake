@@ -1,8 +1,9 @@
+import torch
 import torch.nn as nn
+
+from lib.csrc.extreme_utils import _ext
 from lib.csrc.roi_align_layer.roi_align import ROIAlign
 from lib.utils.rcnn_snake import rcnn_snake_config, rcnn_snake_utils
-import torch
-from lib.csrc.extreme_utils import _ext
 
 
 def fill_fc_weights(layers):
@@ -26,17 +27,17 @@ class ComponentDetection(nn.Module):
             nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=True),
             nn.ReLU(inplace=True),
             nn.Conv2d(256, 256, kernel_size=3, padding=1, bias=True),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
-        self.heads = {'cp_hm': 1, 'cp_wh': 2}
+        self.heads = {"cp_hm": 1, "cp_wh": 2}
         for head in self.heads:
             classes = self.heads[head]
             fc = nn.Sequential(
                 nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2),
-                nn.Conv2d(256, classes, kernel_size=1, stride=1)
+                nn.Conv2d(256, classes, kernel_size=1, stride=1),
             )
-            if 'hm' in head:
+            if "hm" in head:
                 fc[-1].bias.data.fill_(-2.19)
             else:
                 fill_fc_weights(fc)
@@ -44,14 +45,19 @@ class ComponentDetection(nn.Module):
 
     def prepare_training(self, cnn_feature, output, batch):
         w = cnn_feature.size(3)
-        xs = (batch['act_ind'] % w).float()[..., None]
-        ys = (batch['act_ind'] // w).float()[..., None]
-        wh = batch['awh']
-        bboxes = torch.cat([xs - wh[..., 0:1] / 2,
-                            ys - wh[..., 1:2] / 2,
-                            xs + wh[..., 0:1] / 2,
-                            ys + wh[..., 1:2] / 2], dim=2)
-        rois = rcnn_snake_utils.box_to_roi(bboxes, batch['act_01'].byte())
+        xs = (batch["act_ind"] % w).float()[..., None]
+        ys = (batch["act_ind"] // w).float()[..., None]
+        wh = batch["awh"]
+        bboxes = torch.cat(
+            [
+                xs - wh[..., 0:1] / 2,
+                ys - wh[..., 1:2] / 2,
+                xs + wh[..., 0:1] / 2,
+                ys + wh[..., 1:2] / 2,
+            ],
+            dim=2,
+        )
+        rois = rcnn_snake_utils.box_to_roi(bboxes, batch["act_01"].byte())
         roi = self.pooler(cnn_feature, rois)
         return roi
 
@@ -80,12 +86,12 @@ class ComponentDetection(nn.Module):
         return box_score_cls
 
     def nms_abox(self, output):
-        box = output['detection'][..., :4]
-        score = output['detection'][..., 4]
-        cls = output['detection'][..., 5]
+        box = output["detection"][..., :4]
+        score = output["detection"][..., 4]
+        cls = output["detection"][..., 5]
 
         batch_size = box.size(0)
-        cls_num = output['act_hm'].size(1)
+        cls_num = output["act_hm"].size(1)
 
         box_score_cls = []
         for i in range(batch_size):
@@ -107,8 +113,8 @@ class ComponentDetection(nn.Module):
         if rcnn_snake_config.nms_ct:
             detection, ind = self.nms_abox(output)
         else:
-            ind = output['detection'][..., 4] > rcnn_snake_config.ct_score
-            detection = output['detection'][ind]
+            ind = output["detection"][..., 4] > rcnn_snake_config.ct_score
+            detection = output["detection"][ind]
             ind = torch.cat([torch.full([ind[i].sum()], i) for i in range(len(ind))], dim=0)
 
         ind = ind.to(cnn_feature.device)
@@ -116,21 +122,21 @@ class ComponentDetection(nn.Module):
         roi = torch.cat([ind[:, None], abox], dim=1)
 
         roi = self.pooler(cnn_feature, roi)
-        output.update({'detection': detection, 'roi_ind': ind})
+        output.update({"detection": detection, "roi_ind": ind})
 
         return roi
 
     def decode_cp_detection(self, cp_hm, cp_wh, output):
-        abox = output['detection'][..., :4]
-        adet = output['detection']
-        ind = output['roi_ind']
+        abox = output["detection"][..., :4]
+        adet = output["detection"]
+        ind = output["roi_ind"]
         box, cp_ind = rcnn_snake_utils.decode_cp_detection(torch.sigmoid(cp_hm), cp_wh, abox, adet)
-        output.update({'cp_box': box, 'cp_ind': cp_ind})
+        output.update({"cp_box": box, "cp_ind": cp_ind})
 
     def forward(self, output, cnn_feature, batch=None):
         z = {}
 
-        if batch is not None and 'test' not in batch['meta']:
+        if batch is not None and "test" not in batch["meta"]:
             roi = self.prepare_training(cnn_feature, output, batch)
             roi = self.fusion(roi)
             for head in self.heads:
@@ -147,4 +153,3 @@ class ComponentDetection(nn.Module):
         output.update(z)
 
         return output
-

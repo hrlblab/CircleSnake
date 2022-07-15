@@ -1,13 +1,17 @@
-from lib.utils.data_utils import get_border, get_affine_transform, color_aug, blur_aug, small_aug
-import numpy as np
 import cv2
+import numpy as np
+
 from lib.config import cfg
+from lib.utils.data_utils import (blur_aug, color_aug, get_affine_transform,
+                                  get_border, small_aug)
 
 
-def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, polys, boxes=None, label=None):
+def augment(
+    img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, polys, boxes=None, label=None
+):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = max(img.shape[0], img.shape[1]) * 1.0
     scale = 800
     # __import__('ipdb').set_trace()
@@ -15,20 +19,24 @@ def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, po
     flipped = False
     if cfg.small_num > 0:
         img, polys, boxes, label = small_aug(img, polys, boxes, label, cfg.small_num)
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.choice(np.arange(0.6, 1.4, 0.1))
         seed = np.random.randint(0, len(polys))
         index = np.random.randint(0, len(polys[seed]))
-        x = polys[seed][index]['bbox'][0] + (polys[seed][index]['bbox'][2] - 1) / 2
-        y = polys[seed][index]['bbox'][1] + (polys[seed][index]['bbox'][3] - 1) / 2
+        x = polys[seed][index]["bbox"][0] + (polys[seed][index]["bbox"][2] - 1) / 2
+        y = polys[seed][index]["bbox"][1] + (polys[seed][index]["bbox"][3] - 1) / 2
         w_border = get_border(200, scale)
         h_border = get_border(200, scale)
         if (w_border == 0) or (h_border == 0):
             center[0] = x
             center[1] = y
         else:
-            center[0] = np.random.randint(low=max(x-w_border, 0), high=min(x+w_border, width-1))
-            center[1] = np.random.randint(low=max(y-h_border, 0), high=min(y+h_border, height-1))
+            center[0] = np.random.randint(
+                low=max(x - w_border, 0), high=min(x + w_border, width - 1)
+            )
+            center[1] = np.random.randint(
+                low=max(y - h_border, 0), high=min(y + h_border, height - 1)
+            )
 
         # flip augmentation
         if np.random.random() < 0.5:
@@ -37,7 +45,7 @@ def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, po
             center[0] = width - center[0] - 1
 
     input_h, input_w = (800, 800)
-    if split == 'val':
+    if split == "val":
         center = np.array([1024, 512])
         scale = [2048, 1024]
         input_h, input_w = (1024, 2048)
@@ -56,8 +64,8 @@ def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, po
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # blur_aug(inp)
 
@@ -71,5 +79,19 @@ def augment(img, split, down_ratio, _data_rng, _eig_val, _eig_vec, mean, std, po
     output_w = input_w // down_ratio
     trans_output = get_affine_transform(center, scale, 0, [output_w, output_h])
 
-    return orig_img, inp, trans_input, trans_output, input_h, input_w, output_h, output_w, flipped, center, scale, \
-           polys, boxes, label
+    return (
+        orig_img,
+        inp,
+        trans_input,
+        trans_output,
+        input_h,
+        input_w,
+        output_h,
+        output_w,
+        flipped,
+        center,
+        scale,
+        polys,
+        boxes,
+        label,
+    )

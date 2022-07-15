@@ -34,16 +34,19 @@
 # goes wrong.
 
 # python imports
-from __future__ import print_function, absolute_import, division
-import os, sys
+from __future__ import absolute_import, division, print_function
+
 import fnmatch
+import os
+import sys
 from copy import deepcopy
 
-sys.path.append('.')
+sys.path.append(".")
 
+from external.cityscapesscripts.evaluation.instances2dict import (
+    appendInstanceDict, instances2dict)
 # Cityscapes imports
 from external.cityscapesscripts.helpers.csHelpers import *
-from external.cityscapesscripts.evaluation.instances2dict import instances2dict, appendInstanceDict
 
 
 ###################################
@@ -69,15 +72,19 @@ def getPrediction(groundTruthFile, args):
     # determine the prediction path, if the method is first called
     if not args.predictionPath:
         rootPath = None
-        if 'CITYSCAPES_RESULTS' in os.environ:
-            rootPath = os.environ['CITYSCAPES_RESULTS']
-        elif 'CITYSCAPES_DATASET' in os.environ:
-            rootPath = os.path.join(os.environ['CITYSCAPES_DATASET'], "results")
+        if "CITYSCAPES_RESULTS" in os.environ:
+            rootPath = os.environ["CITYSCAPES_RESULTS"]
+        elif "CITYSCAPES_DATASET" in os.environ:
+            rootPath = os.path.join(os.environ["CITYSCAPES_DATASET"], "results")
         else:
-            rootPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'results')
+            rootPath = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)), "..", "..", "results"
+            )
 
         if not os.path.isdir(rootPath):
-            printError("Could not find a result root folder. Please read the instructions of this method.")
+            printError(
+                "Could not find a result root folder. Please read the instructions of this method."
+            )
 
         args.predictionPath = os.path.abspath(rootPath)
 
@@ -119,25 +126,29 @@ class CArgs(object):
 args = CArgs()
 
 # Where to look for Cityscapes
-if 'CITYSCAPES_DATASET' in os.environ:
-    args.cityscapesPath = os.environ['CITYSCAPES_DATASET']
+if "CITYSCAPES_DATASET" in os.environ:
+    args.cityscapesPath = os.environ["CITYSCAPES_DATASET"]
 else:
-    args.cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..')
+    args.cityscapesPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..")
 
 # Parameters that should be modified by user
-args.exportFile = os.path.join(args.cityscapesPath, "evaluationResults", "resultInstanceLevelSemanticLabeling.json")
-args.groundTruthSearch = os.path.join(args.cityscapesPath, "gtFine", "val", "*", "*_gtFine_instanceIds.png")
+args.exportFile = os.path.join(
+    args.cityscapesPath, "evaluationResults", "resultInstanceLevelSemanticLabeling.json"
+)
+args.groundTruthSearch = os.path.join(
+    args.cityscapesPath, "gtFine", "val", "*", "*_gtFine_instanceIds.png"
+)
 
 # overlaps for evaluation
-args.overlaps = np.arange(0.5, 1., 0.05)
+args.overlaps = np.arange(0.5, 1.0, 0.05)
 # minimum region size for evaluation [pixels]
 args.minRegionSizes = np.array([100, 1000, 1000])
 # distance thresholds [m]
-args.distanceThs = np.array([float('inf'), 100, 50])
+args.distanceThs = np.array([float("inf"), 100, 50])
 # distance confidences
-args.distanceConfs = np.array([-float('inf'), 0.5, 0.5])
+args.distanceConfs = np.array([-float("inf"), 0.5, 0.5])
 
-args.gtInstancesFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'gtInstances.json')
+args.gtInstancesFile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "gtInstances.json")
 args.distanceAvailable = False
 args.JSONOutput = True
 args.quiet = False
@@ -163,16 +174,19 @@ def setInstanceLabels(args):
 # imgFile, predId, confidence
 def readPredInfo(predInfoFileName, args):
     predInfo = {}
-    if (not os.path.isfile(predInfoFileName)):
+    if not os.path.isfile(predInfoFileName):
         printError("Infofile '{}' for the predictions not found.".format(predInfoFileName))
-    with open(predInfoFileName, 'r') as f:
+    with open(predInfoFileName, "r") as f:
         for line in f:
             splittedLine = line.split(" ")
             if len(splittedLine) != 3:
                 printError(
-                    "Invalid prediction file. Expected content: relPathPrediction1 labelIDPrediction1 confidencePrediction1")
+                    "Invalid prediction file. Expected content: relPathPrediction1 labelIDPrediction1 confidencePrediction1"
+                )
             if os.path.isabs(splittedLine[0]):
-                printError("Invalid prediction file. First entry in each line must be a relative path.")
+                printError(
+                    "Invalid prediction file. First entry in each line must be a relative path."
+                )
 
             filename = os.path.join(os.path.dirname(predInfoFileName), splittedLine[0])
             filename = os.path.abspath(filename)
@@ -180,8 +194,10 @@ def readPredInfo(predInfoFileName, args):
             # check if that file is actually somewhere within the prediction root
             if os.path.commonprefix([filename, args.predictionPath]) != args.predictionPath:
                 printError(
-                    "Predicted mask {} in prediction text file {} points outside of prediction path.".format(filename,
-                                                                                                             predInfoFileName))
+                    "Predicted mask {} in prediction text file {} points outside of prediction path.".format(
+                        filename, predInfoFileName
+                    )
+                )
 
             imageInfo = {}
             imageInfo["labelID"] = int(float(splittedLine[1]))
@@ -200,14 +216,14 @@ def readGTImage(gtImageFileName, args):
 def getGtInstances(groundTruthList, args):
     gtInstances = {}
     # if there is a global statistics json, then load it
-    if (os.path.isfile(args.gtInstancesFile)):
+    if os.path.isfile(args.gtInstancesFile):
         if not args.quiet:
             print("Loading ground truth instances from JSON.")
         with open(args.gtInstancesFile) as json_file:
             gtInstances = json.load(json_file)
     # otherwise create it
     else:
-        if (not args.quiet):
+        if not args.quiet:
             print("Creating ground truth instances from png files.")
         gtInstances = instances2dict(groundTruthList, not args.quiet)
         writeDict2JSON(gtInstances, args.gtInstancesFile)
@@ -252,7 +268,9 @@ def matchGtWithPreds(predictionList, groundTruthList, gtInstances, args):
         curGtInstancesOrig = filterGtInstances(unfilteredInstances, args)
 
         # Try to assign all predictions
-        (curGtInstances, curPredInstances) = assignGt2Preds(curGtInstancesOrig, gtImage, predInfo, args)
+        (curGtInstances, curPredInstances) = assignGt2Preds(
+            curGtInstancesOrig, gtImage, predInfo, args
+        )
 
         # append to global dict
         matches[dictKey] = {}
@@ -261,7 +279,7 @@ def matchGtWithPreds(predictionList, groundTruthList, gtInstances, args):
 
         count += 1
         if not args.quiet:
-            print("\rImages Processed: {}".format(count), end=' ')
+            print("\rImages Processed: {}".format(count), end=" ")
             sys.stdout.flush()
 
     if not args.quiet:
@@ -345,10 +363,12 @@ def assignGt2Preds(gtInstancesOrig, gtImage, predInfo, args):
         # However, for now we treat both the same and do the rest later
         for (gtNum, gtInstance) in enumerate(gtInstancesOrig[labelName]):
 
-            intersection = np.count_nonzero(np.logical_and(gtNp == gtInstance["instID"], boolPredInst))
+            intersection = np.count_nonzero(
+                np.logical_and(gtNp == gtInstance["instID"], boolPredInst)
+            )
 
             # If they intersect add them as matches to both dicts
-            if (intersection > 0):
+            if intersection > 0:
                 gtCopy = gtInstance.copy()
                 predCopy = predInstance.copy()
 
@@ -413,7 +433,9 @@ def evaluateMatches(matches, args):
     # First dimension is class, second overlap
     ap = np.zeros((len(distThs), len(args.instLabels), len(overlaps)), np.float)
 
-    for dI, (minRegionSize, distanceTh, distanceConf) in enumerate(zip(minRegionSizes, distThs, distConfs)):
+    for dI, (minRegionSize, distanceTh, distanceConf) in enumerate(
+        zip(minRegionSizes, distThs, distConfs)
+    ):
         for (oI, overlapTh) in enumerate(overlaps):
             for (lI, labelName) in enumerate(args.instLabels):
                 y_true = np.empty(0)
@@ -428,9 +450,14 @@ def evaluateMatches(matches, args):
                     predInstances = matches[img]["prediction"][labelName]
                     gtInstances = matches[img]["groundTruth"][labelName]
                     # filter groups in ground truth
-                    gtInstances = [gt for gt in gtInstances if
-                                   gt["instID"] >= 1000 and gt["pixelCount"] >= minRegionSize and gt[
-                                       "medDist"] <= distanceTh and gt["distConf"] >= distanceConf]
+                    gtInstances = [
+                        gt
+                        for gt in gtInstances
+                        if gt["instID"] >= 1000
+                        and gt["pixelCount"] >= minRegionSize
+                        and gt["medDist"] <= distanceTh
+                        and gt["distConf"] >= distanceConf
+                    ]
 
                     if gtInstances:
                         haveGt = True
@@ -446,7 +473,8 @@ def evaluateMatches(matches, args):
                         foundMatch = False
                         for pred in gt["matchedPred"]:
                             overlap = float(pred["intersection"]) / (
-                            gt["pixelCount"] + pred["pixelCount"] - pred["intersection"])
+                                gt["pixelCount"] + pred["pixelCount"] - pred["intersection"]
+                            )
                             if overlap > overlapTh:
                                 # the score
                                 confidence = pred["confidence"]
@@ -479,7 +507,8 @@ def evaluateMatches(matches, args):
                         foundGt = False
                         for gt in pred["matchedGt"]:
                             overlap = float(gt["intersection"]) / (
-                            gt["pixelCount"] + pred["pixelCount"] - gt["intersection"])
+                                gt["pixelCount"] + pred["pixelCount"] - gt["intersection"]
+                            )
                             if overlap > overlapTh:
                                 foundGt = True
                                 break
@@ -491,8 +520,11 @@ def evaluateMatches(matches, args):
                                 if gt["instID"] < 1000:
                                     nbIgnorePixels += gt["intersection"]
                                 # small ground truth instances
-                                if gt["pixelCount"] < minRegionSize or gt["medDist"] > distanceTh or gt[
-                                    "distConf"] < distanceConf:
+                                if (
+                                    gt["pixelCount"] < minRegionSize
+                                    or gt["medDist"] > distanceTh
+                                    or gt["distConf"] < distanceConf
+                                ):
                                     nbIgnorePixels += gt["intersection"]
                             proportionIgnore = float(nbIgnorePixels) / pred["pixelCount"]
                             # if not ignored
@@ -548,8 +580,8 @@ def evaluateMatches(matches, args):
                         recall[idxRes] = r
 
                     # first point in curve is artificial
-                    precision[-1] = 1.
-                    recall[-1] = 0.
+                    precision[-1] = 1.0
+                    recall[-1] = 0.0
 
                     # compute average of precision-recall curve
                     # integration is performed via zero order, or equivalently step-wise integration
@@ -557,9 +589,9 @@ def evaluateMatches(matches, args):
                     # use a convolution with appropriate kernel, manually deal with the boundaries first
                     recallForConv = np.copy(recall)
                     recallForConv = np.append(recallForConv[0], recallForConv)
-                    recallForConv = np.append(recallForConv, 0.)
+                    recallForConv = np.append(recallForConv, 0.0)
 
-                    stepWidths = np.convolve(recallForConv, [-0.5, 0, 0.5], 'valid')
+                    stepWidths = np.convolve(recallForConv, [-0.5, 0, 0.5], "valid")
 
                     # integrate is now simply a dot product
                     apCurrent = np.dot(precision, stepWidths)
@@ -567,7 +599,7 @@ def evaluateMatches(matches, args):
                 elif haveGt:
                     apCurrent = 0.0
                 else:
-                    apCurrent = float('nan')
+                    apCurrent = float("nan")
                 ap[dI, lI, oI] = apCurrent
 
     return ap
@@ -576,8 +608,8 @@ def evaluateMatches(matches, args):
 def computeAverages(aps, args):
     # max distance index
     dInf = np.argmax(args.distanceThs)
-    d50m = np.where(np.isclose(args.distanceThs, 50.))
-    d100m = np.where(np.isclose(args.distanceThs, 100.))
+    d50m = np.where(np.isclose(args.distanceThs, 50.0))
+    d100m = np.where(np.isclose(args.distanceThs, 100.0))
     o50 = np.where(np.isclose(args.overlaps, 0.5))
 
     avgDict = {}
@@ -603,10 +635,10 @@ def computeAverages(aps, args):
 
 
 def printResults(avgDict, args):
-    sep = ("," if args.csv       else "")
-    col1 = (":" if not args.csv   else "")
-    noCol = (colors.ENDC if args.colorized else "")
-    bold = (colors.BOLD if args.colorized else "")
+    sep = "," if args.csv else ""
+    col1 = ":" if not args.csv else ""
+    noCol = colors.ENDC if args.colorized else ""
+    bold = colors.BOLD if args.colorized else ""
     lineLen = 50
     if args.distanceAvailable:
         lineLen += 40
@@ -717,25 +749,32 @@ def main():
     groundTruthImgList = []
 
     # the image lists can either be provided as arguments
-    if (len(argv) > 3):
+    if len(argv) > 3:
         for arg in argv:
-            if ("gt" in arg or "groundtruth" in arg):
+            if "gt" in arg or "groundtruth" in arg:
                 groundTruthImgList.append(arg)
-            elif ("pred" in arg):
+            elif "pred" in arg:
                 predictionImgList.append(arg)
     # however the no-argument way is prefered
     elif len(argv) == 0:
         # use the ground truth search string specified above
         groundTruthImgList = glob.glob(args.groundTruthSearch)
         if not groundTruthImgList:
-            printError("Cannot find any ground truth images to use for evaluation. Searched for: {}".format(
-                args.groundTruthSearch))
+            printError(
+                "Cannot find any ground truth images to use for evaluation. Searched for: {}".format(
+                    args.groundTruthSearch
+                )
+            )
         # get the corresponding prediction for each ground truth imag
         for gt in groundTruthImgList:
             predictionImgList.append(getPrediction(gt, args))
 
     # print some info for user
-    print("Note that this tool uses the file '{}' to cache the ground truth instances.".format(args.gtInstancesFile))
+    print(
+        "Note that this tool uses the file '{}' to cache the ground truth instances.".format(
+            args.gtInstancesFile
+        )
+    )
     print("If anything goes wrong, or if you change the ground truth, please delete the file.")
 
     # evaluate
@@ -750,7 +789,7 @@ def evaluate(prediction, gt, prediction_dir, stat_dir=None):
         args.exportFile = stat_dir
     args.predictionPath = os.path.abspath(prediction_dir)
     res_dict = evaluateImgLists(prediction, gt, args)
-    ap = res_dict['averages']['allAp']
+    ap = res_dict["averages"]["allAp"]
     return ap
 
 

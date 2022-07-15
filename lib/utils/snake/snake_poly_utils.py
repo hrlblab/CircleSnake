@@ -1,6 +1,7 @@
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import cascaded_union, polygonize
 import numpy as np
+from shapely.geometry import MultiPolygon, Polygon
+from shapely.ops import cascaded_union, polygonize
+
 from lib.utils.snake import snake_config
 
 

@@ -1,13 +1,13 @@
-__author__ = 'tsungyi'
+__author__ = "tsungyi"
+import fractions
 import logging
+import math
+import sys
+
 import numpy as np
 import pycocotools._mask as _mask
 from bbox import BBox2D, BBox2DList, BBox3D
 from bbox.geometry import polygon_area, polygon_collision, polygon_intersection
-import sys
-import math
-import fractions
-
 
 # Interface for manipulating masks stored in RLE format.
 #
@@ -80,28 +80,32 @@ import fractions
 # Code written by Piotr Dollar and Tsung-Yi Lin, 2015.
 # Licensed under the Simplified BSD License [see coco/license.txt]
 
-iou         = _mask.iou
-merge       = _mask.merge
+iou = _mask.iou
+merge = _mask.merge
 frPyObjects = _mask.frPyObjects
+
 
 def encode(bimask):
     if len(bimask.shape) == 3:
         return _mask.encode(bimask)
     elif len(bimask.shape) == 2:
         h, w = bimask.shape
-        return _mask.encode(bimask.reshape((h, w, 1), order='F'))[0]
+        return _mask.encode(bimask.reshape((h, w, 1), order="F"))[0]
+
 
 def decode(rleObjs):
     if type(rleObjs) == list:
         return _mask.decode(rleObjs)
     else:
-        return _mask.decode([rleObjs])[:,:,0]
+        return _mask.decode([rleObjs])[:, :, 0]
+
 
 def area(rleObjs):
     if type(rleObjs) == list:
         return _mask.area(rleObjs)
     else:
         return _mask.area([rleObjs])[0]
+
 
 def toBbox(rleObjs):
     if type(rleObjs) == list:
@@ -117,7 +121,6 @@ def iou_3d(a: BBox3D, b: BBox3D):
     Alias for `jaccard_index_3d`.
     """
     return jaccard_index_3d(a, b)
-
 
 
 def jaccard_index_3d(a: BBox3D, b: BBox3D):
@@ -144,12 +147,12 @@ def jaccard_index_3d(a: BBox3D, b: BBox3D):
     zmax = np.minimum(a.cz, b.cz)
     zmin = np.maximum(a.cz - a.h, b.cz - b.h)
 
-    inter_vol = inter_area * np.maximum(0, zmax-zmin)
+    inter_vol = inter_area * np.maximum(0, zmax - zmin)
 
     a_vol = a.l * a.w * a.h
     b_vol = b.l * b.w * b.h
 
-    union_vol = (a_vol + b_vol - inter_vol)
+    union_vol = a_vol + b_vol - inter_vol
 
     iou = inter_vol / union_vol
 
@@ -160,17 +163,18 @@ def jaccard_index_3d(a: BBox3D, b: BBox3D):
     return np.round_(iou, decimals=5)
 
 
-def dddIOU(d,g):
+def dddIOU(d, g):
     # d = ddd_to_dd_box(d)
     ious = np.zeros((len(d), len(g)))
     for di in range(len(d)):
-        box_d = BBox3D(d[di][0],d[di][1],d[di][2],d[di][3],d[di][4],d[di][5])
+        box_d = BBox3D(d[di][0], d[di][1], d[di][2], d[di][3], d[di][4], d[di][5])
         for gi in range(len(g)):
-            box_g = BBox3D(g[gi][0],g[gi][1],g[gi][2],g[gi][3],g[gi][4],g[gi][5])
-            ious[di, gi] = iou_3d(box_d,box_g)
+            box_g = BBox3D(g[gi][0], g[gi][1], g[gi][2], g[gi][3], g[gi][4], g[gi][5])
+            ious[di, gi] = iou_3d(box_d, box_g)
     return ious
 
-def circleBoxIOU(d,g):
+
+def circleBoxIOU(d, g):
     ious = np.zeros((len(d), len(g)))
     for di in range(len(d)):
         center_d_x = d[di][0]
@@ -180,26 +184,26 @@ def circleBoxIOU(d,g):
             center_g_x = g[gi][0]
             center_g_y = g[gi][1]
             center_g_r = g[gi][2]
-            distance = math.sqrt((center_d_x - center_g_x)**2 + (center_d_y - center_g_y)**2)
-            if center_d_r <=0 or center_g_r <=0 or distance > (center_d_r + center_g_r) :
+            distance = math.sqrt((center_d_x - center_g_x) ** 2 + (center_d_y - center_g_y) ** 2)
+            if center_d_r <= 0 or center_g_r <= 0 or distance > (center_d_r + center_g_r):
                 ious[di, gi] = 0
             else:
                 box_d = np.array([0, 0, 0, 0], dtype=np.float32)
                 box_d[0] = 512.0 - center_d_r
                 box_d[1] = 512.0 - center_d_r
-                box_d[2] = center_d_r*2
-                box_d[3] = center_d_r*2
+                box_d[2] = center_d_r * 2
+                box_d[3] = center_d_r * 2
 
                 box_g = np.array([0, 0, 0, 0], dtype=np.float32)
                 box_g[0] = 512.0 - center_g_r
                 box_g[1] = 512.0 + distance - center_g_r
-                box_g[2] = center_g_r*2
-                box_g[3] = center_g_r*2
+                box_g[2] = center_g_r * 2
+                box_g[3] = center_g_r * 2
 
-                overlap = solve(center_d_r, center_g_r, distance ** 2)
-                union = math.pi * (center_d_r**2) + math.pi * (center_g_r**2) -  overlap
+                overlap = solve(center_d_r, center_g_r, distance**2)
+                union = math.pi * (center_d_r**2) + math.pi * (center_g_r**2) - overlap
                 if union == 0:
-                    ious[di,gi] = 0
+                    ious[di, gi] = 0
                 else:
                     iscrowd = [0, 0]
                     ious[di, gi] = iou([list(box_d)], [list(box_g)], iscrowd)
@@ -207,7 +211,8 @@ def circleBoxIOU(d,g):
 
     return ious
 
-def circleIOU(d,g):
+
+def circleIOU(d, g):
     ious = np.zeros((len(d), len(g)))
     for di in range(len(d)):
         center_d_x = d[di][0]
@@ -217,16 +222,16 @@ def circleIOU(d,g):
             center_g_x = g[gi][0]
             center_g_y = g[gi][1]
             center_g_r = g[gi][2]
-            distance = math.sqrt((center_d_x - center_g_x)**2 + (center_d_y - center_g_y)**2)
-            if center_d_r <=0 or center_g_r <=0 or distance > (center_d_r + center_g_r) :
+            distance = math.sqrt((center_d_x - center_g_x) ** 2 + (center_d_y - center_g_y) ** 2)
+            if center_d_r <= 0 or center_g_r <= 0 or distance > (center_d_r + center_g_r):
                 ious[di, gi] = 0
             else:
                 overlap = solve(center_d_r, center_g_r, distance**2)
-                union = math.pi * (center_d_r**2) + math.pi * (center_g_r**2) -  overlap
+                union = math.pi * (center_d_r**2) + math.pi * (center_g_r**2) - overlap
                 if union == 0:
-                    ious[di,gi] = 0
+                    ious[di, gi] = 0
                 else:
-                    ious[di, gi] = overlap/union
+                    ious[di, gi] = overlap / union
     return ious
 
 
@@ -235,7 +240,7 @@ def f(x):
     Compute  x - sin(x) cos(x)  without loss of significance
     """
     if abs(x) < 0.01:
-        return 2 * x ** 3 / 3 - 2 * x ** 5 / 15 + 4 * x ** 7 / 315
+        return 2 * x**3 / 3 - 2 * x**5 / 15 + 4 * x**7 / 315
     return x - math.sin(x) * math.cos(x)
 
 
@@ -252,9 +257,9 @@ def acos_sqrt(x, sgn):
         # pp('y < 0.01')
         numers = [1, 1, 3, 5, 35]
         denoms = [1, 6, 40, 112, 1152]
-        ans = fractions.Fraction('0')
+        ans = fractions.Fraction("0")
         for i, (n, d) in enumerate(zip(numers, denoms)):
-            ans += y ** i * n / d
+            ans += y**i * n / d
         assert isinstance(y, fractions.Fraction)
         ans *= math.sqrt(y)
         if sgn >= 0:
@@ -272,7 +277,7 @@ def solve(r1, r2, d_squared):
     if d >= r1 + r2:  # circles are far apart
         return 0.0
     if r2 >= d + r1:  # whole circle is contained in the other
-        return math.pi * r1 ** 2
+        return math.pi * r1**2
 
     r1f, r2f, dsq = map(fractions.Fraction, [r1, r2, d_squared])
     r1sq, r2sq = map(lambda i: i * i, [r1f, r2f])

@@ -16,8 +16,11 @@
 #
 
 # python imports
-from __future__ import print_function, absolute_import, division
-import os, sys, getopt
+from __future__ import absolute_import, division, print_function
+
+import getopt
+import os
+import sys
 
 # Image processing
 # Check if PIL is actually Pillow as expected
@@ -29,7 +32,7 @@ except:
     sys.exit(-1)
 
 try:
-    import PIL.Image     as Image
+    import PIL.Image as Image
     import PIL.ImageDraw as ImageDraw
 except:
     print("Failed to import the image processing packages.")
@@ -38,39 +41,44 @@ except:
 
 # cityscapes imports
 from cityscapesscripts.helpers.annotation import Annotation
-from cityscapesscripts.helpers.labels     import name2label
+from cityscapesscripts.helpers.labels import name2label
+
 
 # Print the information
 def printHelp():
-    print('{} [OPTIONS] inputJson outputImg'.format(os.path.basename(sys.argv[0])))
-    print('')
-    print('Reads labels as polygons in JSON format and converts them to label images,')
-    print('where each pixel has an ID that represents the ground truth label.')
-    print('')
-    print('Options:')
-    print(' -h                 Print this help')
-    print(' -t                 Use the "trainIDs" instead of the regular mapping. See "labels.py" for details.')
+    print("{} [OPTIONS] inputJson outputImg".format(os.path.basename(sys.argv[0])))
+    print("")
+    print("Reads labels as polygons in JSON format and converts them to label images,")
+    print("where each pixel has an ID that represents the ground truth label.")
+    print("")
+    print("Options:")
+    print(" -h                 Print this help")
+    print(
+        ' -t                 Use the "trainIDs" instead of the regular mapping. See "labels.py" for details.'
+    )
+
 
 # Print an error message and quit
 def printError(message):
-    print('ERROR: {}'.format(message))
-    print('')
-    print('USAGE:')
+    print("ERROR: {}".format(message))
+    print("")
+    print("USAGE:")
     printHelp()
     sys.exit(-1)
+
 
 # Convert the given annotation to a label image
 def createLabelImage(annotation, encoding, outline=None):
     # the size of the image
-    size = ( annotation.imgWidth , annotation.imgHeight )
+    size = (annotation.imgWidth, annotation.imgHeight)
 
     # the background
     if encoding == "ids":
-        background = name2label['unlabeled'].id
+        background = name2label["unlabeled"].id
     elif encoding == "trainIds":
-        background = name2label['unlabeled'].trainId
+        background = name2label["unlabeled"].trainId
     elif encoding == "color":
-        background = name2label['unlabeled'].color
+        background = name2label["unlabeled"].color
     else:
         print("Unknown encoding '{}'".format(encoding))
         return None
@@ -82,11 +90,11 @@ def createLabelImage(annotation, encoding, outline=None):
         labelImg = Image.new("L", size, background)
 
     # a drawer to draw into the image
-    drawer = ImageDraw.Draw( labelImg )
+    drawer = ImageDraw.Draw(labelImg)
 
     # loop over all objects
     for obj in annotation.objects:
-        label   = obj.label
+        label = obj.label
         polygon = obj.polygon
 
         # If the object is deleted, skip it
@@ -95,11 +103,11 @@ def createLabelImage(annotation, encoding, outline=None):
 
         # If the label is not known, but ends with a 'group' (e.g. cargroup)
         # try to remove the s and see if that works
-        if ( not label in name2label ) and label.endswith('group'):
-            label = label[:-len('group')]
+        if (not label in name2label) and label.endswith("group"):
+            label = label[: -len("group")]
 
         if not label in name2label:
-            printError( "Label '{}' not known.".format(label) )
+            printError("Label '{}' not known.".format(label))
 
         # If the ID is negative that polygon should not be drawn
         if name2label[label].id < 0:
@@ -114,14 +122,15 @@ def createLabelImage(annotation, encoding, outline=None):
 
         try:
             if outline:
-                drawer.polygon( polygon, fill=val, outline=outline )
+                drawer.polygon(polygon, fill=val, outline=outline)
             else:
-                drawer.polygon( polygon, fill=val )
+                drawer.polygon(polygon, fill=val)
         except:
             print("Failed to draw polygon with label {}".format(label))
             raise
 
     return labelImg
+
 
 # A method that does all the work
 # inJson is the filename of the json file
@@ -130,43 +139,45 @@ def createLabelImage(annotation, encoding, outline=None):
 #     - "ids"      : classes are encoded using the regular label IDs
 #     - "trainIds" : classes are encoded using the training IDs
 #     - "color"    : classes are encoded using the corresponding colors
-def json2labelImg(inJson,outImg,encoding="ids"):
+def json2labelImg(inJson, outImg, encoding="ids"):
     annotation = Annotation()
     annotation.fromJsonFile(inJson)
-    labelImg   = createLabelImage( annotation , encoding )
-    labelImg.save( outImg )
+    labelImg = createLabelImage(annotation, encoding)
+    labelImg.save(outImg)
+
 
 # The main method, if you execute this script directly
 # Reads the command line arguments and calls the method 'json2labelImg'
 def main(argv):
     trainIds = False
     try:
-        opts, args = getopt.getopt(argv,"ht")
+        opts, args = getopt.getopt(argv, "ht")
     except getopt.GetoptError:
-        printError( 'Invalid arguments' )
+        printError("Invalid arguments")
     for opt, arg in opts:
-        if opt == '-h':
+        if opt == "-h":
             printHelp()
             sys.exit(0)
-        elif opt == '-t':
+        elif opt == "-t":
             trainIds = True
         else:
-            printError( "Handling of argument '{}' not implementend".format(opt) )
+            printError("Handling of argument '{}' not implementend".format(opt))
 
     if len(args) == 0:
-        printError( "Missing input json file" )
+        printError("Missing input json file")
     elif len(args) == 1:
-        printError( "Missing output image filename" )
+        printError("Missing output image filename")
     elif len(args) > 2:
-        printError( "Too many arguments" )
+        printError("Too many arguments")
 
     inJson = args[0]
     outImg = args[1]
 
     if trainIds:
-        json2labelImg( inJson , outImg , "trainIds" )
+        json2labelImg(inJson, outImg, "trainIds")
     else:
-        json2labelImg( inJson , outImg )
+        json2labelImg(inJson, outImg)
+
 
 # call the main method
 if __name__ == "__main__":

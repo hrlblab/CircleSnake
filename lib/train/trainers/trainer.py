@@ -1,5 +1,6 @@
-import time
 import datetime
+import time
+
 import torch
 import tqdm
 from torch.nn import DataParallel
@@ -17,7 +18,7 @@ class Trainer(object):
 
     def to_cuda(self, batch):
         for k in batch:
-            if k == 'meta':
+            if k == "meta":
                 continue
             if isinstance(batch[k], tuple):
                 batch[k] = [b.cuda() for b in batch[k]]
@@ -38,23 +39,21 @@ class Trainer(object):
             # batch = self.to_cuda(batch)
             output, loss, loss_stats, image_stats = self.network(batch)
 
-
-
             # training stage: loss; optimizer; schedule
-            # loss = loss.mean()
-            # optimizer.zero_grad()
-            # loss.backward()
+            loss = loss.mean()
+            optimizer.zero_grad()
+            loss.backward()
 
-            py_loss = loss[1]
-            loss = loss[0]
-            if iteration % 2 == 0:
-                loss = loss.mean()
-                optimizer.zero_grad()
-                loss.backward()
-            else:
-                py_loss = py_loss.mean()
-                optimizer.zero_grad()
-                py_loss.backward()
+            # py_loss = loss[1]
+            # loss = loss[0]
+            # if iteration % 2 == 0:
+            #     loss = loss.mean()
+            #     optimizer.zero_grad()
+            #     loss.backward()
+            # else:
+            #     py_loss = py_loss.mean()
+            #     optimizer.zero_grad()
+            #     py_loss.backward()
 
             torch.nn.utils.clip_grad_value_(self.network.parameters(), 40)
             optimizer.step()
@@ -72,16 +71,16 @@ class Trainer(object):
                 # print training state
                 eta_seconds = recorder.batch_time.global_avg * (max_iter - iteration)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-                lr = optimizer.param_groups[0]['lr']
+                lr = optimizer.param_groups[0]["lr"]
                 memory = torch.cuda.max_memory_allocated() / 1024.0 / 1024.0
 
-                training_state = '  '.join(['eta: {}', '{}', 'lr: {:.6f}', 'max_mem: {:.0f}'])
+                training_state = "  ".join(["eta: {}", "{}", "lr: {:.6f}", "max_mem: {:.0f}"])
                 training_state = training_state.format(eta_string, str(recorder), lr, memory)
                 print(training_state)
 
                 # record loss_stats and image_dict
                 recorder.update_image_stats(image_stats)
-                recorder.record('train')
+                recorder.record("train")
 
     def val(self, epoch, data_loader, evaluator=None, recorder=None):
         self.network.eval()
@@ -90,7 +89,7 @@ class Trainer(object):
         data_size = len(data_loader)
         for batch in tqdm.tqdm(data_loader):
             for k in batch:
-                if k != 'meta':
+                if k != "meta":
                     batch[k] = batch[k].cuda()
 
             with torch.no_grad():
@@ -106,7 +105,7 @@ class Trainer(object):
         loss_state = []
         for k in val_loss_stats.keys():
             val_loss_stats[k] /= data_size
-            loss_state.append('{}: {:.4f}'.format(k, val_loss_stats[k]))
+            loss_state.append("{}: {:.4f}".format(k, val_loss_stats[k]))
         print(loss_state)
 
         if evaluator is not None:
@@ -114,5 +113,4 @@ class Trainer(object):
             val_loss_stats.update(result)
 
         if recorder:
-            recorder.record('val', epoch, val_loss_stats, image_stats)
-
+            recorder.record("val", epoch, val_loss_stats, image_stats)

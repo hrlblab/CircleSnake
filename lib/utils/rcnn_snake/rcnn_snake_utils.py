@@ -1,11 +1,12 @@
 import torch
-from lib.utils.snake.snake_decode import nms, topk, transpose_and_gather_feat
-from lib.utils.rcnn_snake import rcnn_snake_config
+
 from lib.csrc.extreme_utils import _ext
+from lib.utils.rcnn_snake import rcnn_snake_config
+from lib.utils.snake.snake_decode import nms, topk, transpose_and_gather_feat
 
 
 def box_to_roi(box, box_01):
-    """ box: [b, n, 4] """
+    """box: [b, n, 4]"""
     box = box[box_01]
     ind = torch.cat([torch.full([box_01[i].sum()], i) for i in range(len(box_01))], dim=0)
     ind = ind.to(box.device).float()
@@ -28,10 +29,15 @@ def decode_cp_detection(cp_hm, cp_wh, abox, adet):
 
     xs = xs / cp_hm_w * abox_w[..., None] + abox[:, 0:1]
     ys = ys / cp_hm_h * abox_h[..., None] + abox[:, 1:2]
-    boxes = torch.stack([xs - cp_wh[..., 0] / 2,
-                         ys - cp_wh[..., 1] / 2,
-                         xs + cp_wh[..., 0] / 2,
-                         ys + cp_wh[..., 1] / 2], dim=2)
+    boxes = torch.stack(
+        [
+            xs - cp_wh[..., 0] / 2,
+            ys - cp_wh[..., 1] / 2,
+            xs + cp_wh[..., 0] / 2,
+            ys + cp_wh[..., 1] / 2,
+        ],
+        dim=2,
+    )
 
     ascore = adet[..., 4]
     acls = adet[..., 5]
@@ -53,4 +59,3 @@ def decode_cp_detection(cp_hm, cp_wh, abox, adet):
     boxes = torch.cat(boxes_, dim=0)
 
     return boxes, cp_ind
-

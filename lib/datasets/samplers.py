@@ -1,9 +1,9 @@
-from torch.utils.data.sampler import Sampler
-from torch.utils.data.sampler import BatchSampler
+import math
+
 import numpy as np
 import torch
-import math
 import torch.distributed as dist
+from torch.utils.data.sampler import BatchSampler, Sampler
 
 
 class ImageSizeBatchSampler(Sampler):
@@ -16,8 +16,8 @@ class ImageSizeBatchSampler(Sampler):
         self.wmin = min_size
         self.wmax = max_size
         self.size_int = size_int
-        self.hint = (self.hmax-self.hmin)//self.size_int+1
-        self.wint = (self.wmax-self.wmin)//self.size_int+1
+        self.hint = (self.hmax - self.hmin) // self.size_int + 1
+        self.wint = (self.wmax - self.wmin) // self.size_int + 1
 
     def generate_height_width(self):
         hi, wi = np.random.randint(0, self.hint), np.random.randint(0, self.wint)
@@ -48,6 +48,7 @@ class IterationBasedBatchSampler(BatchSampler):
     Wraps a BatchSampler, resampling from it until
     a specified number of iterations have been sampled
     """
+
     def __init__(self, batch_sampler, num_iterations, start_iter=0):
         self.batch_sampler = batch_sampler
         self.num_iterations = num_iterations

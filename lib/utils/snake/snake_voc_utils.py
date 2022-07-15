@@ -1,39 +1,48 @@
-import numpy as np
-from lib.utils import data_utils
-import cv2
-from lib.utils.snake import snake_config
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import polygonize
-from scipy import ndimage
 import math
 
+import cv2
+import numpy as np
+from scipy import ndimage
+from shapely.geometry import MultiPolygon, Polygon
+from shapely.ops import polygonize
+
+from lib.utils import data_utils
+from lib.utils.snake import snake_config
 
 # Globals ----------------------------------------------------------------------
 CLASSES = (
-        "aeroplane",
-        "bicycle",
-        "bird",
-        "boat",
-        "bottle",
-        "bus",
-        "car",
-        "cat",
-        "chair",
-        "cow",
-        "diningtable",
-        "dog",
-        "horse",
-        "motorbike",
-        "person",
-        "pottedplant",
-        "sheep",
-        "sofa",
-        "train",
-        "tvmonitor",
-    )
+    "aeroplane",
+    "bicycle",
+    "bird",
+    "boat",
+    "bottle",
+    "bus",
+    "car",
+    "cat",
+    "chair",
+    "cow",
+    "diningtable",
+    "dog",
+    "horse",
+    "motorbike",
+    "person",
+    "pottedplant",
+    "sheep",
+    "sofa",
+    "train",
+    "tvmonitor",
+)
 
 Filter_voc_ids = [2011002993, 2011002244, 2011001190]
-Filter_sbd_ids = [2008006500, 2008007448, 2010000956, 2010003259, 2011001190, 2011001476, 2011002616]
+Filter_sbd_ids = [
+    2008006500,
+    2008007448,
+    2010000956,
+    2010003259,
+    2011001190,
+    2011001476,
+    2011002616,
+]
 Filter_ids = []
 
 # ------------------------------------------------------------------------------
@@ -55,18 +64,18 @@ def xywh_to_xyxy(boxes):
 def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys=None):
     # resize input
     height, width = img.shape[0], img.shape[1]
-    center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
     scale = max(img.shape[0], img.shape[1]) * 1.0
     if not isinstance(scale, np.ndarray) and not isinstance(scale, list):
         scale = np.array([scale, scale], dtype=np.float32)
 
     # random crop and flip augmentation
     flipped = False
-    if split == 'train':
+    if split == "train":
         scale = scale * np.random.uniform(0.6, 1.4)
         x, y = center
-        w_border = data_utils.get_border(width/4, scale[0]) + 1
-        h_border = data_utils.get_border(height/4, scale[0]) + 1
+        w_border = data_utils.get_border(width / 4, scale[0]) + 1
+        h_border = data_utils.get_border(height / 4, scale[0]) + 1
         center[0] = np.random.randint(low=max(x - w_border, 0), high=min(x + w_border, width - 1))
         center[1] = np.random.randint(low=max(y - h_border, 0), high=min(y + h_border, height - 1))
 
@@ -77,8 +86,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys=None):
             center[0] = width - center[0] - 1
 
     input_h, input_w = snake_config.voc_input_h, snake_config.voc_input_w
-    if split != 'train':
-        center = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
+    if split != "train":
+        center = np.array([img.shape[1] / 2.0, img.shape[0] / 2.0], dtype=np.float32)
         scale = max(width, height) * 1.0
         scale = np.array([scale, scale])
         x = 32
@@ -90,8 +99,8 @@ def augment(img, split, _data_rng, _eig_val, _eig_vec, mean, std, polys=None):
 
     # color augmentation
     orig_img = inp.copy()
-    inp = (inp.astype(np.float32) / 255.)
-    if split == 'train':
+    inp = inp.astype(np.float32) / 255.0
+    if split == "train":
         data_utils.color_aug(_data_rng, inp, _eig_val, _eig_vec)
         # blur_aug(inp)
 
@@ -121,24 +130,27 @@ def handle_break_point(poly, axis, number, outside_border):
         return []
 
     break_points = np.argwhere(
-        outside_border(poly[:-1, axis], number) != outside_border(poly[1:, axis], number)).ravel()
+        outside_border(poly[:-1, axis], number) != outside_border(poly[1:, axis], number)
+    ).ravel()
     if len(break_points) == 0:
         return poly
 
     new_poly = []
     if not outside_border(poly[break_points[0], axis], number):
-        new_poly.append(poly[:break_points[0]])
+        new_poly.append(poly[: break_points[0]])
 
     for i in range(len(break_points)):
         current_poly = poly[break_points[i]]
         next_poly = poly[break_points[i] + 1]
-        mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (next_poly[axis] - current_poly[axis])
+        mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (
+            next_poly[axis] - current_poly[axis]
+        )
 
         if outside_border(poly[break_points[i], axis], number):
             if mid_poly[axis] != next_poly[axis]:
                 new_poly.append([mid_poly])
             next_point = len(poly) if i == (len(break_points) - 1) else break_points[i + 1]
-            new_poly.append(poly[break_points[i] + 1:next_point])
+            new_poly.append(poly[break_points[i] + 1 : next_point])
         else:
             new_poly.append([poly[break_points[i]]])
             if mid_poly[axis] != current_poly[axis]:
@@ -147,7 +159,9 @@ def handle_break_point(poly, axis, number, outside_border):
     if outside_border(poly[-1, axis], number) != outside_border(poly[0, axis], number):
         current_poly = poly[-1]
         next_poly = poly[0]
-        mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (next_poly[axis] - current_poly[axis])
+        mid_poly = current_poly + (next_poly - current_poly) * (number - current_poly[axis]) / (
+            next_poly[axis] - current_poly[axis]
+        )
         new_poly.append([mid_poly])
 
     return np.concatenate(new_poly)
@@ -194,6 +208,7 @@ def get_valid_shape_poly(poly):
         shape_polys.append(shape_poly)
     return shape_polys
 
+
 # Trying to generate all valid gt_circles
 def get_valid_polys(polys):
     """create shape_polys and filter gt_circles"""
@@ -213,9 +228,12 @@ def get_valid_polys(polys):
 
     relation = np.any(relation, axis=1)
     shape_polys = [shape_polys[i] for i, shape_poly in enumerate(shape_polys) if not relation[i]]
-    polys = [np.array(shape_poly.exterior.coords)[::-1]
-             if shape_poly.exterior.is_ccw else np.array(shape_poly.exterior.coords)
-             for shape_poly in shape_polys]
+    polys = [
+        np.array(shape_poly.exterior.coords)[::-1]
+        if shape_poly.exterior.is_ccw
+        else np.array(shape_poly.exterior.coords)
+        for shape_poly in shape_polys
+    ]
     return polys
 
 
@@ -331,10 +349,10 @@ def get_extreme_points(pts):
 def get_quadrangle(box):
     x_min, y_min, x_max, y_max = box
     quadrangle = [
-        [(x_min + x_max) / 2., y_min],
-        [x_min, (y_min + y_max) / 2.],
-        [(x_min + x_max) / 2., y_max],
-        [x_max, (y_min + y_max) / 2.]
+        [(x_min + x_max) / 2.0, y_min],
+        [x_min, (y_min + y_max) / 2.0],
+        [(x_min + x_max) / 2.0, y_max],
+        [x_max, (y_min + y_max) / 2.0],
     ]
     return np.array(quadrangle)
 
@@ -342,23 +360,24 @@ def get_quadrangle(box):
 def get_box(box):
     x_min, y_min, x_max, y_max = box
     box = [
-        [(x_min + x_max) / 2., y_min],
+        [(x_min + x_max) / 2.0, y_min],
         [x_min, y_min],
-        [x_min, (y_min + y_max) / 2.],
+        [x_min, (y_min + y_max) / 2.0],
         [x_min, y_max],
-        [(x_min + x_max) / 2., y_max],
+        [(x_min + x_max) / 2.0, y_max],
         [x_max, y_max],
-        [x_max, (y_min + y_max) / 2.],
-        [x_max, y_min]
+        [x_max, (y_min + y_max) / 2.0],
+        [x_max, y_min],
     ]
     return np.array(box)
 
 
 def get_init(box):
-    if snake_config.init == 'quadrangle':
+    if snake_config.init == "quadrangle":
         return get_quadrangle(box)
     else:
         return get_box(box)
+
 
 # Change this to circle - primary file
 def get_octagon(ex):
@@ -366,28 +385,40 @@ def get_octagon(ex):
     t, l, b, r = ex[0][1], ex[1][0], ex[2][1], ex[3][0]
     x = 8.0
     octagon = [
-        ex[0][0], ex[0][1],
-        max(ex[0][0] - w / x, l), ex[0][1],
-        ex[1][0], max(ex[1][1] - h / x, t),
-        ex[1][0], ex[1][1],
-        ex[1][0], min(ex[1][1] + h / x, b),
-        max(ex[2][0] - w / x, l), ex[2][1],
-        ex[2][0], ex[2][1],
-        min(ex[2][0] + w / x, r), ex[2][1],
-        ex[3][0], min(ex[3][1] + h / x, b),
-        ex[3][0], ex[3][1],
-        ex[3][0], max(ex[3][1] - h / x, t),
-        min(ex[0][0] + w / x, r), ex[0][1],
+        ex[0][0],
+        ex[0][1],
+        max(ex[0][0] - w / x, l),
+        ex[0][1],
+        ex[1][0],
+        max(ex[1][1] - h / x, t),
+        ex[1][0],
+        ex[1][1],
+        ex[1][0],
+        min(ex[1][1] + h / x, b),
+        max(ex[2][0] - w / x, l),
+        ex[2][1],
+        ex[2][0],
+        ex[2][1],
+        min(ex[2][0] + w / x, r),
+        ex[2][1],
+        ex[3][0],
+        min(ex[3][1] + h / x, b),
+        ex[3][0],
+        ex[3][1],
+        ex[3][0],
+        max(ex[3][1] - h / x, t),
+        min(ex[0][0] + w / x, r),
+        ex[0][1],
     ]
     return np.array(octagon).reshape(-1, 2)
 
 
 def uniform_sample_init(poly):
     polys = []
-    ind = np.array(list(range(0, len(poly), len(poly)//4)))
+    ind = np.array(list(range(0, len(poly), len(poly) // 4)))
     next_ind = np.roll(ind, shift=-1)
     for i in range(len(ind)):
-        poly_ = poly[ind[i]:ind[i]+len(poly)//4]
+        poly_ = poly[ind[i] : ind[i] + len(poly) // 4]
         poly_ = np.append(poly_, [poly[next_ind[i]]], axis=0)
         poly_ = uniform_sample_segment(poly_, snake_config.init_poly_num // 4)
         polys.append(poly_)
@@ -407,7 +438,7 @@ def uniformsample(pgtnp_px2, newpnum):
     # we need to remove gt points
     # we simply remove shortest paths
     if pnum > newpnum:
-        edgeidxkeep_k = edgeidxsort_p[pnum - newpnum:]
+        edgeidxkeep_k = edgeidxsort_p[pnum - newpnum :]
         edgeidxsort_k = np.sort(edgeidxkeep_k)
         pgtnp_kx2 = pgtnp_px2[edgeidxsort_k]
         assert pgtnp_kx2.shape[0] == newpnum
@@ -446,8 +477,8 @@ def uniformsample(pgtnp_px2, newpnum):
 
         psample = []
         for i in range(pnum):
-            pb_1x2 = pgtnp_px2[i:i + 1]
-            pe_1x2 = pgtnext_px2[i:i + 1]
+            pb_1x2 = pgtnp_px2[i : i + 1]
+            pe_1x2 = pgtnext_px2[i : i + 1]
 
             pnewnum = edgenum[i]
             wnp_kx1 = np.arange(edgenum[i], dtype=np.float32).reshape(-1, 1) / edgenum[i]
@@ -501,8 +532,8 @@ def uniform_sample_segment(pgtnp_px2, newpnum):
 
     psample = []
     for i in range(pnum):
-        pb_1x2 = pgtnp_px2[i:i + 1]
-        pe_1x2 = pgtnext_px2[i:i + 1]
+        pb_1x2 = pgtnp_px2[i : i + 1]
+        pe_1x2 = pgtnext_px2[i : i + 1]
 
         pnewnum = edgenum[i]
         wnp_kx1 = np.arange(edgenum[i], dtype=np.float32).reshape(-1, 1) / edgenum[i]
@@ -532,7 +563,6 @@ def add_gaussian_noise(poly, x_min, y_min, x_max, y_max):
 
 
 def clip_poly_to_image(poly, h, w):
-    poly[:, 0] = np.clip(poly[:, 0], a_min=0, a_max=w-1)
-    poly[:, 1] = np.clip(poly[:, 1], a_min=0, a_max=h-1)
+    poly[:, 0] = np.clip(poly[:, 0], a_min=0, a_max=w - 1)
+    poly[:, 1] = np.clip(poly[:, 1], a_min=0, a_max=h - 1)
     return poly
-
