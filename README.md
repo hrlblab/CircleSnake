@@ -28,35 +28,6 @@ From the results, CircleSnake increases the average precision of glomerular dete
 
 Please refer to [INSTALL.md](docs/INSTALL.md) for installation instructions.
 
-[comment]: <> (## Benchmark Evaluation and Training)
-
-[comment]: <> (After [installation]&#40;docs/INSTALL.md&#41;, follow the instructions in [DATA.md]&#40;docs/DATA.md&#41; to setup the datasets. Then check [GETTING_STARTED.md]&#40;docs/GETTING_STARTED.md&#41; to reproduce the results in the paper.)
-
-[comment]: <> (We provide scripts for all the experiments in the [experiments]&#40;experiments&#41; folder.)
-
-[comment]: <> (## Develop)
-
-[comment]: <> (If you are interested in training CircleNet in a new dataset, use CircleNet in a new task, or use a new network architecture for CircleNet please refer to [DEVELOP.md]&#40;docs/DEVELOP.md&#41;. Also feel free to send us emails for discussions or suggestions.)
-
 ## License
 
-CircleSnake itself is released under the MIT License (refer to the LICENSE file for details).
-Parts of code and documentation are borrowed from [CenterNet](https://github.com/xingyizhou/CenterNet) and [DeepSnake](https://github.com/zju3dv/snake).
-
-[comment]: <> (## Citation)
-
-[comment]: <> (If you find this project useful for your research, please use the following BibTeX entry.)
-
-[comment]: <> (    @article{nguyen2021circle,)
-
-[comment]: <> (      title={Circle Representation for Medical Object Detection},)
-
-[comment]: <> (      author={Nguyen, Ethan H and Yang, Haichun and Deng, Ruining and Lu, Yuzhe and Zhu, Zheyu and Roland, Joseph T and Lu, Le and Landman, Bennett A and Fogo, Agnes B and Huo, Yuankai},)
-
-[comment]: <> (      journal={IEEE Transactions on Medical Imaging},)
-
-[comment]: <> (      year={2021},)
-
-[comment]: <> (      publisher={IEEE})
-
-[comment]: <> (    })
+CircleSnake itself is released under the MIT License (refer to the [LICENSE](docs/LICENSE) file for details).
