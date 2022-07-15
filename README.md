@@ -7,7 +7,7 @@ The official implementation of CircleSnake
 Contact: [ethan.h.nguyen@vanderbilt.edu](mailto:ethan.h.nguyen@vanderbilt.edu). Feel free to reach out with any questions or discussion!  
 
 ## Abstract
-Circle representation has recently been introduced as a "medical imaging optimized" representation for more effective instance object detection on ball-shaped medical objects. With its superior performance on instance detection, it is appealing to extend the circle representation to instance medical object segmentation. In this work, we propose CircleSnake, a simple end-to-end circle contour deformation-based segmentation method for ball-shaped medical objects. Compared to the prevalent DeepSnake method, our contribution is threefold: 
+In this work, we propose CircleSnake, a simple end-to-end circle contour deformation-based segmentation method for ball-shaped medical objects. Compared to the prevalent DeepSnake method, our contribution is threefold: 
 
 (1) We replace the complicated **bounding box to octagon contour** transformation with a computation-free and consistent **bounding circle to circle contour** adaption for segmenting ball-shaped medical objects; 
 
