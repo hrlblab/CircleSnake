@@ -87,6 +87,11 @@ Test a model of our algorithm on a dataset:
 python run.py --type evaluate test.dataset $dataset_name resume True model $model_name task $task
 ```
 
+Example
+```
+python run.py --type evaluate --cfg_file configs/coco_circlesnake.yaml model CircleSnake_glomeruli test.dataset CocoTest test.epoch 19 ct_score 0.35 segm_or_bbox "segm"
+```
+
 ### Training
 
 Some variables during training:
@@ -99,6 +104,11 @@ Train a model of our algorithm on a dataset for 140 epochs and evaluate it every
 
 ```
 python train_net.py test.dataset $test_dataset train.dataset $train_dataset resume False model $model_name task $task network $network_name train.epoch 140 eval_ep 5
+```
+
+Example
+```
+python train_net.py --cfg_file configs/coco_circlesnake.yaml model CircleSnake_glomeruli train.dataset CocoTrain test.dataset CocoVal pretrain ctdet_coco_dla_2x_converted
 ```
 
 Some configurations that are frequently revised for training:
