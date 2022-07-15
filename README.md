@@ -35,4 +35,4 @@ Please refer to [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for guidance t
 
 ## License
 
-CircleSnake is released under [this](docs/LICENSE) license.
+CircleSnake is released under [this](LICENSE) license.
