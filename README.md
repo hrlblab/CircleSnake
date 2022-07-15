@@ -30,4 +30,4 @@ Please refer to [INSTALL.md](docs/INSTALL.md) for installation instructions.
 
 ## License
 
-CircleSnake itself is released under the MIT License (refer to the [LICENSE](docs/LICENSE) file for details).
+CircleSnake itself is released under [this](docs/LICENSE) license.
