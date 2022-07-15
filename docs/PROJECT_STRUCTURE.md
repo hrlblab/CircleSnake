@@ -93,7 +93,7 @@ Some variables during training:
 1. `$test_dataset`: the dataset used for evaluation during training.
 2. `$train_dataset`: the dataset used for training.
 3. `$network_name`: a specific network architecture for our algorithm `$task`.
-4. `$pretrain_model`: model to initalize weights. Placed in `data/pretrain`
+4. `$pretrain_model`: model to initialize weights. Placed in `data/pretrain`
 
 Train a model of our algorithm on a dataset for 140 epochs and evaluate it every 5 epochs:
 
