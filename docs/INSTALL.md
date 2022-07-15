@@ -14,9 +14,8 @@ conda activate CircleSnake
 # Export CUDA_HOME based on your CUDA version
 # example: export CUDA_HOME="/usr/local/cuda-11.4"
 
-cd
-git clone https://github.com/NVIDIA/apex.git
-cd apex
+git clone https://github.com/EthanHNguyen/circlesnake-apex
+cd circlesnake-apex
 python setup.py install --cuda_ext --cpp_ext
 ```
 
