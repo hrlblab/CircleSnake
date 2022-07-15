@@ -16,19 +16,19 @@ With this project, you only need to implement the four parts. The training and t
 
 ### Dataset
 
-The meta data of dataset like `dataset_id` is registered in `lib/datasets/dataset_catalog.py`.
+The meta-data of dataset `sample_dataset` is registered in `lib/datasets/dataset_catalog.py`.
 
 dataset:
 ```
 lib/datasets/
 ├── dataset_catalog.py
-├── $dataset_id/
+├── sample_dataset/
     └── $task.py
 ```
 
 ### Network
 
-We could define networks for this task under `lib/networks/$task`.
+We define networks for this task under `lib/networks/$task`.
 
 network:
 ```
@@ -52,8 +52,6 @@ lib/train/
 ```
 
 ### Evaluator
-
-It is very very necessary for us to define a evaluator. It is a feedback for our training strategies.
 
 Evaluate an algorithm `task` on a dataset that is registered with `dataset_id`.
 
@@ -95,6 +93,7 @@ Some variables during training:
 1. `$test_dataset`: the dataset used for evaluation during training.
 2. `$train_dataset`: the dataset used for training.
 3. `$network_name`: a specific network architecture for our algorithm `$task`.
+4. `$pretrain_model`: model to initalize weights. Placed in `data/pretrain`
 
 Train a model of our algorithm on a dataset for 140 epochs and evaluate it every 5 epochs:
 

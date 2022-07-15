@@ -29,6 +29,10 @@ Glomeruli are used to evaluate the performance of the benchmarks. From the resul
 
 Please refer to [INSTALL.md](docs/INSTALL.md) for installation instructions.
 
+## Development
+
+Please refer to [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for guidance to train, inferences, and develop our work.
+
 ## License
 
 CircleSnake itself is released under [this](docs/LICENSE) license.
