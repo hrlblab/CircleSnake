@@ -28,7 +28,7 @@ cd $ROOT/lib/csrc
 # Export CUDA_HOME based on your CUDA version
 # example: export CUDA_HOME="/usr/local/cuda-11.4"
 
-cd dcn_v2
+cd DCNv2_latest/
 python setup.py build_ext --inplace
 cd ../extreme_utils
 python setup.py build_ext --inplace

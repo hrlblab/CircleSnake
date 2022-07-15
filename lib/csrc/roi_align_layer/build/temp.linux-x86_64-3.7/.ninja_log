@@ -1,4 +1,0 @@
-# ninja log v5
-0	12746	1640955943	/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/build/temp.linux-x86_64-3.7/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/cuda/ROIAlign_cuda.o	b895b4993f5de437
-0	14445	1640955944	/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/build/temp.linux-x86_64-3.7/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/cpu/ROIAlign_cpu.o	b2b0761359e4c3ea
-0	15875	1640955946	/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/build/temp.linux-x86_64-3.7/home/ethan/Documents/CircleSnake/lib/csrc/roi_align_layer/vision.o	97e92d1d305ae7f6
