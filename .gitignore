@@ -14,4 +14,4 @@ lib/csrc/roi_align_layer/build/
 debug_metrics/
 data/
 circlesnake-apex/
-lib/csrc/DCNv2_latest/build/
+lib/csrc/DCNv2_latest/build/lib/csrc/dcn_v2/build/
