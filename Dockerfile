@@ -1,23 +1,21 @@
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:22.02-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:21.07-py3
 FROM $BASE_IMAGE
 ARG BASE_IMAGE
 
 RUN git clone https://github.com/hrlblab/CircleSnake.git
 WORKDIR CircleSnake
 
+# Create the environment:
+RUN conda env create -f environment.yml
 
+# Make RUN commands use the new environment:
+SHELL ["conda", "run", "-n", "CircleSnake", "/bin/bash", "-c"]
 
-RUN conda install mamba -n base -c conda-forge && \
-    mamba env create -f environment.yml
+## Make RUN commands use the new environment:
+#RUN echo "conda activate CircleSnake" >> ~/.bashrc
+#SHELL ["/bin/bash", "--login", "-c"]
 
-RUN conda init bash
-SHELL ["conda", "activate", "CircleSnake", "/bin/bash", "-c"]
-
-RUN git clone https://github.com/EthanHNguyen/circlesnake-apex && \
-    cd circlesnake-apex && \
-    python setup.py install --cuda_ext --cpp_ext && \
-    cd ../lib/csrc && \
-    cd DCNv2_latest/ && \
+RUN cd lib/csrc/dcn_v2/ && \
     python setup.py build_ext --inplace && \
     cd ../extreme_utils && \
     python setup.py build_ext --inplace && \
