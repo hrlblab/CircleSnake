@@ -8,6 +8,8 @@ from lib.train import (make_lr_scheduler, make_optimizer, make_recorder,
                        make_trainer, set_lr_scheduler)
 from lib.utils.net_utils import load_model, load_network, save_model
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def train(cfg, network):
     trainer = make_trainer(cfg, network)
@@ -67,6 +69,7 @@ def test(cfg, network):
 def main():
     network = make_network(cfg)
     if args.test:
+        # return
         test(cfg, network)
     else:
         train(cfg, network)
