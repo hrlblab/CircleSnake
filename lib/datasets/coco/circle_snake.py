@@ -218,6 +218,37 @@ class Dataset(data.Dataset):
         img_gt_polys.append(img_gt_poly)
         can_gt_polys.append(can_gt_poly)
 
+    def Resize(self, image, circles, polys, new_size):
+
+        resized_image = cv2.resize(image, new_size)
+
+        # Scale factor for annotations
+        scale_x = new_size[0] / image.shape[1]
+        scale_y = new_size[1] / image.shape[0]
+
+        # Resize annotations
+        resized_circles= []
+        resized_polys = []
+        for circle in circles:
+            if isinstance(circle, list):  # assuming each annotation is a list of points
+                resized_circle = [[point[0] * scale_x, point[1] * scale_y] for point in circle]
+            else:
+                # Handle other types of annotations as needed
+                resized_circle = circle
+            resized_circles.append(resized_circle)
+
+        for poly in polys:
+            if isinstance(poly, list):  # assuming each annotation is a list of points
+                resized_poly = [[point[0] * scale_x, point[1] * scale_y] for point in poly]
+            else:
+                # Handle other types of annotations as needed
+                resized_poly = poly
+            resized_polys.append(resized_poly)
+
+        return resized_image, resized_circles, resized_polys
+
+
+
     # Given an image id, fetch the associated annotations and format it nicely
     def __getitem__(self, index):
         ann = self.anns[index]
@@ -252,6 +283,10 @@ class Dataset(data.Dataset):
         gt_circles, instance_polys = self.transform_original_circle_data(
             instance_polys, gt_circles, flipped, width, trans_output, inp_out_hw
         )
+
+
+        # orig_img, gt_circles, instance_polys = self.Resize(orig_img, gt_circles, instance_polys, (800,800))
+
 
         # Makes sure polygons are valid
         instance_polys = self.get_valid_polys(instance_polys, inp_out_hw)
