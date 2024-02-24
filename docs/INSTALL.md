@@ -8,21 +8,25 @@ There are two methods to install CircleSnake:
 
 ## Source
 ### Set up the Python environment
-0. Install [mamba](https://mamba.readthedocs.io/en/latest/installation.html) (faster) or [conda](https://docs.conda.io/en/latest/miniconda.html)
+Install [conda](https://docs.conda.io/en/latest/miniconda.html)
 ```
 conda env create -f environment.yml
 conda activate CircleSnake
 ```
+### Cuda Toolkit
+Install [cudatoolkit](https://developer.nvidia.com/cuda-11.3.0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu)
 
+```
+# Add Cuda toolkit to Path in ```.bashrc```
+# Export CUDA_HOME based on your CUDA version
+# example: export CUDA_HOME="/usr/local/cuda-11.3"
+```
 
 ### Compile cuda extensions under `lib/csrc`
 
 ```
 export ROOT=/path/to/snake
 cd $ROOT/lib/csrc
-
-# Export CUDA_HOME based on your CUDA version
-# example: export CUDA_HOME="/usr/local/cuda-11.4"
 
 cd DCNv2_latest/
 python setup.py build_ext --inplace
