@@ -200,6 +200,5 @@ def find_highest_segm_ap(log_file_path):
 if __name__ == "__main__":
     logfile = os.path.join(cfg.record_dir, 'recorder.log')
     best_model = find_highest_segm_ap(logfile)
-    # best_model = 13
 
     globals()["run_" + args.type]()
