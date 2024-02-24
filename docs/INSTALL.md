@@ -1,6 +1,6 @@
 # Installation
 
-We used an Ubuntu 18.04 OS and CUDA 11.4 system. Installation may vary based on CUDA and OS.
+We suggest you use an Ubuntu 18.04 / 20.04 OS and CUDA 11.3 system. Installation may vary based on CUDA and OS.
 
 There are two methods to install CircleSnake:
 - From source
