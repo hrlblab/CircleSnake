@@ -17,7 +17,7 @@ conda activate CircleSnake
 Install [cudatoolkit](https://developer.nvidia.com/cuda-11.3.0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu)
 
 ```
-# Add Cuda toolkit to Path in ```.bashrc```
+# Add Cuda toolkit to Path in .bashrc
 # Export CUDA_HOME based on your CUDA version
 # example: export CUDA_HOME="/usr/local/cuda-11.3"
 ```
