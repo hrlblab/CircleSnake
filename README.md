@@ -36,3 +36,24 @@ Please refer to [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) for guidance t
 ## License
 
 CircleSnake is released under [this](LICENSE) license.
+
+## Citation
+~~~
+@misc{xiong2024circle,
+      title={Circle Representation for Medical Instance Object Segmentation}, 
+      author={Juming Xiong and Ethan H. Nguyen and Yilin Liu and Ruining Deng and Regina N Tyree and Hernan Correa and Girish Hiremath and Yaohong Wang and Haichun Yang and Agnes B. Fogo and Yuankai Huo},
+      year={2024},
+      eprint={2403.11507},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+
+@misc{nguyen2022circlesnake,
+      title={CircleSnake: Instance Segmentation with Circle Representation}, 
+      author={Ethan H. Nguyen and Haichun Yang and Zuhayr Asad and Ruining Deng and Agnes B. Fogo and Yuankai Huo},
+      year={2022},
+      eprint={2211.01254},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+~~~
