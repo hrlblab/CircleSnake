@@ -4,7 +4,7 @@ The official implementation of CircleSnake
 [//]: # (![]&#40;docs/fig1.png&#41;)
 <img src="docs/fig1.png" alt="drawing" width="600"/>
 
-Contact: [ethan.h.nguyen@vanderbilt.edu](mailto:ethan.h.nguyen@vanderbilt.edu). Feel free to reach out with any questions or discussion!  
+Contact: [ethan.h.nguyen@vanderbilt.edu](mailto:ethan.h.nguyen@vanderbilt.edu). Feel free to reach out with any questions or discussions!  
 
 ## Abstract
 In this work, we propose CircleSnake, a simple end-to-end circle contour deformation-based segmentation method for ball-shaped medical objects. Compared to the prevalent DeepSnake method, our contribution is threefold: 
