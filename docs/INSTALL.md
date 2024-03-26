@@ -14,7 +14,8 @@ conda env create -f environment.yml
 conda activate CircleSnake
 ```
 ### Cuda Toolkit
-Install [cudatoolkit](https://developer.nvidia.com/cuda-11.3.0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu) (We suggest you use runfile(local) to install the cuda toolkit in the website. Only cuda toolkit is needed)
+Install [cudatoolkit](https://developer.nvidia.com/cuda-11.3.0-download-archive?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu)
+(We suggest you use runfile(local) to install the cuda toolkit in the website. Only cuda toolkit is needed)
 
 ```
 # Add Cuda toolkit to Path in .bashrc
