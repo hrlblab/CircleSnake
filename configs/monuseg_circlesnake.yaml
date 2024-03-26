@@ -1,0 +1,38 @@
+model: 'coco'
+network: 'ro_34'
+task: 'circle_snake'
+resume: false
+# pretrain: 'ctdet_coco_dla_2x.pth'
+gpus: (0,)
+
+train:
+    optim: 'adam'
+    lr: 0.0005
+    # milestones: (6,12,18,24)
+    gamma: 0.5
+    batch_size: 4
+    dataset: 'monusegTrain'
+    num_workers: 0
+    epoch: 40
+    # weight_decay: 0.01
+
+use_val: true
+val:
+    dataset: 'monusegVal'
+    batch_size: 1
+test:
+    dataset: 'monusegTest'
+    batch_size: 1
+
+heads: {'ct_hm': 1, 'radius': 1, 'reg': 2}
+segm_or_bbox: 'both'
+ct_score: 0.05
+save_ep: 1
+eval_ep: 1
+
+
+# debug_test: true
+# save_images: true
+# rotate_reproduce: true
+# rotate: 90
+dice: true
