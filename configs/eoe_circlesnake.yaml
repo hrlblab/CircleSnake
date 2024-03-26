@@ -1,7 +1,7 @@
 model: 'coco'
 network: 'ro_34'     # Syntax: arch_numOfLayers
 task: 'circle_snake' # Determines which network to call
-resume: true
+resume: false
 gpus: (0,) # Must be a tuple
 
 train:
@@ -14,7 +14,7 @@ train:
     num_workers: 0
     epoch: 40
     # weight_decay: 0.001
-use_val: false
+use_val: true
 val:
     dataset: 'eoeVal'
     batch_size: 1
@@ -24,11 +24,11 @@ test:
 
 heads: {'ct_hm': 4, 'radius': 1, 'reg': 2}
 segm_or_bbox: 'both'
-ct_score: 0.3
+ct_score: 0.05
 save_ep: 1
 eval_ep: 1
 # debug_test: true
 # save_images: true
 dice: true
-rotate_reproduce: true
-rotate: 90
+# rotate_reproduce: true
+# rotate: 90
