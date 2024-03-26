@@ -19,7 +19,7 @@ Install [cudatoolkit](https://developer.nvidia.com/cuda-11.3.0-download-archive?
 We suggest you use runfile(local) to install the cuda toolkit in the website. Only cuda toolkit is needed when installing.
 
 ```
-# Add Cuda toolkit to Path in .bashrc
+# Add Cuda toolkit to Path in ```.bashrc``` file
 # Export CUDA_HOME based on your CUDA version
 # example: export CUDA_HOME="/usr/local/cuda-11.3"
 ```
@@ -30,7 +30,7 @@ We suggest you use runfile(local) to install the cuda toolkit in the website. On
 export ROOT=/path/to/snake
 cd $ROOT/lib/csrc
 
-cd DCNv2_latest/
+cd dcn_v2/
 python setup.py build_ext --inplace
 cd ../extreme_utils
 python setup.py build_ext --inplace
