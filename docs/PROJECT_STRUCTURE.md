@@ -26,6 +26,33 @@ lib/datasets/
     └── $task.py
 ```
 
+#### Example of Register Your Dataset
+
+   To register your dataset in the CircleSnake application, you should add the dataset directory and name to the "/CircleSnake/lib/datasets/dataset\_catalog.py" file. Here's an example of how it can be done:
+
+   ```python
+    dataset_attrs = {
+        "eoeTrain": {
+            "id": "coco",
+            "data_root": YOUR_TRAIN_ROOT,
+            "ann_file": YOUR_TRAINING_COCO_FILE,
+            "split": "train",
+        },
+        "eoeVal": {
+            "id": "coco",
+            "data_root": YOUR_VAL_ROOT,
+            "ann_file": YOUR_VALITION_COCO_FILE,
+            "split": "test",
+        },
+        "eoeTest": {
+            "id": "coco_test",
+            "data_root": YOUR_TEST_ROOT,
+            "ann_file": YOUR_TESTING_COCO_FILE,
+            "split": "test",
+        }
+    }
+   ```
+
 ### Network
 
 We define networks for this task under `lib/networks/$task`.
