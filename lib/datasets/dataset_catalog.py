@@ -3,24 +3,62 @@ from lib.config import cfg
 
 class DatasetCatalog(object):
     dataset_attrs = {
+        "eoeTrain": {
+            "id": "coco",
+            "data_root": '/home/cnet/Journal_CodeWithData/data/eoe/train',
+            "ann_file": '/home/cnet/Journal_CodeWithData/data/eoe/json_coco/EoE_train2022.json',
+            "split": "train",
+        },
+        "eoeVal": {
+            "id": "coco",
+            "data_root": '/home/cnet/Journal_CodeWithData/data/eoe/val',
+            "ann_file": '/home/cnet/Journal_CodeWithData/data/eoe/json_coco/EoE_val2022.json',
+            "split": "val",
+        },
+        "eoeTest": {
+            "id": "coco",
+            "data_root": '/home/cnet/Journal_CodeWithData/data/eoe/test',
+            "ann_file": '/home/cnet/Journal_CodeWithData/data/eoe/json_coco/EoE_test2022.json',
+            "split": "test",
+        },
         "monusegTrain": {
             "id": "coco",
-            "data_root": "data/monuseg/train",
-            "ann_file": "data/monuseg/MoNuSeg_train2021.json",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/monuseg/train",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/monuseg/json_coco/MoNuSeg_train_2021.json",
             "split": "train",
         },
         "monusegVal": {
             "id": "coco",
-            "data_root": "data/monuseg/val",
-            "ann_file": "data/monuseg/MoNuSeg_val2021.json",
-            "split": "test",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/monuseg/val",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/monuseg/json_coco/MoNuSeg_val_2021.json",
+            "split": "val",
         },
         "monusegTest": {
-            "id": "coco_test",
-            "data_root": "data/monuseg/test",
-            "ann_file": "data/monuseg/MoNuSeg_test2021.json",
+            "id": "coco",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/monuseg/test",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/monuseg/json_coco/MoNuSeg_test_2021.json",
             "split": "test",
         },
+
+        "kidpathTrain": {
+            "id": "coco",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/kidpath/train",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/kidpath/json_coco/kidpath_train.json",
+            "split": "train",
+        },
+        "kidpathVal": {
+            "id": "coco",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/kidpath/val",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/kidpath/json_coco/kidpath_val.json",
+            "split": "test",
+        },
+        "kidpathTest": {
+            "id": "coco",
+            "data_root": "/home/cnet/Journal_CodeWithData/data/kidpath/test",
+            "ann_file": "/home/cnet/Journal_CodeWithData/data/kidpath/json_coco/kidpath_test.json",
+            "split": "test",
+        },
+
         "CocoTrain": {
             "id": "coco",
             "data_root": "data/kidpath_coco/train",
