@@ -1,9 +1,8 @@
 import os
 from collections import defaultdict, deque
-
+import logging
 import torch
 from tensorboardX import SummaryWriter
-
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -38,10 +37,26 @@ class SmoothedValue(object):
 class Recorder(object):
     def __init__(self, cfg):
         log_dir = cfg.record_dir
-        if not cfg.resume:
-            os.system("rm -rf {}".format(log_dir))
-        self.writer = SummaryWriter(log_dir=log_dir)
 
+        try:
+            from tensorboardX import SummaryWriter
+            if not cfg.resume:
+                os.system("rm -rf {}".format(log_dir))
+            self.writer = SummaryWriter(log_dir=log_dir)
+
+            logging.basicConfig(filename='{}/recorder.log'.format(log_dir), level=logging.INFO,
+            format='%(asctime)s - %(levelname)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
+
+            self.use_tensorboard = False
+        except ImportError:
+            logging.basicConfig(filename='{}/recorder.log'.format(log_dir), level=logging.INFO,
+            format='%(asctime)s - %(levelname)s: %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
+            
+            logging.warning("tensorboardX not found, using logging instead.")
+            self.use_tensorboard = False
+        
         # scalars
         self.epoch = 0
         self.step = 0
@@ -71,18 +86,23 @@ class Recorder(object):
         pattern = prefix + "/{}"
         step = step if step >= 0 else self.step
         loss_stats = loss_stats if loss_stats else self.loss_stats
+        if self.use_tensorboard:
+            for k, v in loss_stats.items():
+                if isinstance(v, SmoothedValue):
+                    self.writer.add_scalar(pattern.format(k), v.median, step)
+                else:
+                    self.writer.add_scalar(pattern.format(k), v, step)
 
-        for k, v in loss_stats.items():
-            if isinstance(v, SmoothedValue):
-                self.writer.add_scalar(pattern.format(k), v.median, step)
-            else:
-                self.writer.add_scalar(pattern.format(k), v, step)
+            if self.processor is None:
+                return
+            image_stats = self.processor(image_stats) if image_stats else self.image_stats
+            for k, v in image_stats.items():
+                self.writer.add_image(pattern.format(k), v, step)
+        else:
+            # Logging instead of Tensorboard
+            for k, v in loss_stats.items():
+                logging.info(f'{pattern.format(k)} - Step: {step}, Value: {v.median if isinstance(v, SmoothedValue) else v}')        
 
-        if self.processor is None:
-            return
-        image_stats = self.processor(image_stats) if image_stats else self.image_stats
-        for k, v in image_stats.items():
-            self.writer.add_image(pattern.format(k), v, step)
 
     def state_dict(self):
         scalar_dict = {}
